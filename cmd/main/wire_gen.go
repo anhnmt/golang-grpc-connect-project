@@ -7,7 +7,12 @@
 package main
 
 import (
+	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
+	"github.com/xdorro/golang-grpc-base-project/internal/service"
+	"github.com/xdorro/golang-grpc-base-project/internal/usecase/auth"
+	"github.com/xdorro/golang-grpc-base-project/internal/usecase/ping"
+	"github.com/xdorro/golang-grpc-base-project/internal/usecase/user"
 	"net/http"
 )
 
@@ -15,9 +20,24 @@ import (
 
 func initServer() server.IServer {
 	serveMux := http.NewServeMux()
-	option := &server.Option{
-		Mux: serveMux,
+	iInterceptor := interceptor.NewInterceptor()
+	iPingService := ping.NewService()
+	option := &user.Option{}
+	iUserService := user.NewService(option)
+	authOption := &auth.Option{}
+	iAuthService := auth.NewService(authOption)
+	serviceOption := &service.Option{
+		Mux:         serveMux,
+		Interceptor: iInterceptor,
+		PingService: iPingService,
+		UserService: iUserService,
+		AuthService: iAuthService,
 	}
-	iServer := server.NewServer(option)
+	iService := service.NewService(serviceOption)
+	serverOption := &server.Option{
+		Mux:     serveMux,
+		Service: iService,
+	}
+	iServer := server.NewServer(serverOption)
 	return iServer
 }

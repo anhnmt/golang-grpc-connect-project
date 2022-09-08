@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 
+	"github.com/xdorro/golang-grpc-base-project/internal/service"
 	"github.com/xdorro/golang-grpc-base-project/utils"
 )
 
@@ -35,7 +36,8 @@ type Server struct {
 	appDebug  bool
 
 	// option
-	mux *http.ServeMux
+	mux     *http.ServeMux
+	service service.IService
 
 	mu   sync.Mutex
 	http *http.Server
@@ -43,7 +45,8 @@ type Server struct {
 
 // Option server.
 type Option struct {
-	Mux *http.ServeMux
+	Mux     *http.ServeMux
+	Service service.IService
 }
 
 // NewServer new server.
@@ -54,6 +57,7 @@ func NewServer(opt *Option) IServer {
 		pprofPort: viper.GetInt("PPROF_PORT"),
 		appDebug:  viper.GetBool("APP_DEBUG"),
 		mux:       opt.Mux,
+		service:   opt.Service,
 	}
 
 	log.Info().
