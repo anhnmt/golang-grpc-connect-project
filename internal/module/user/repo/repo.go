@@ -5,6 +5,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 
+	usermodel "github.com/xdorro/golang-grpc-base-project/internal/module/user/model"
 	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 )
 
@@ -28,7 +29,7 @@ type Option struct {
 // NewRepo creates a new repository.
 func NewRepo(opt *Option) IRepo {
 	r := &Repo{
-		collection: opt.Repo.Collection("users"),
+		collection: opt.Repo.CollectionModel(&usermodel.User{}),
 	}
 
 	return r

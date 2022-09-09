@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/xdorro/golang-grpc-base-project/internal/model"
 )
 
 var _ IRepo = (*Repo)(nil)
@@ -17,6 +19,7 @@ var _ IRepo = (*Repo)(nil)
 type IRepo interface {
 	Close() error
 	Collection(name string) *mongo.Collection
+	CollectionModel(model model.IBaseModel) *mongo.Collection
 }
 
 // Repo is a repository struct.
@@ -84,6 +87,11 @@ func (r *Repo) Close() error {
 // Collection returns the mongo collection by Name.
 func (r *Repo) Collection(name string) *mongo.Collection {
 	return r.client.Database(r.dbName).Collection(name)
+}
+
+// CollectionModel returns the mongo collection models by Name.
+func (r *Repo) CollectionModel(model model.IBaseModel) *mongo.Collection {
+	return r.Collection(model.CollectionName())
 }
 
 // setClient adds a new client to the repository.
