@@ -9,9 +9,12 @@ package main
 import (
 	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/auth/biz"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/auth/service"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/ping/biz"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/ping/service"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/user/biz"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/user/service"
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
 	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
@@ -23,20 +26,32 @@ import (
 func initServer() server.IServer {
 	serveMux := http.NewServeMux()
 	iInterceptor := interceptor.NewInterceptor()
-	iPingService := pingbiz.NewService()
+	iPingBiz := pingbiz.NewBiz()
+	option := &pingservice.Option{
+		PingBiz: iPingBiz,
+	}
+	iPingService := pingservice.NewService(option)
 	iRepo := repo.NewRepo()
-	option := &userrepo.Option{
+	userrepoOption := &userrepo.Option{
 		Repo: iRepo,
 	}
-	userrepoIRepo := userrepo.NewRepo(option)
+	userrepoIRepo := userrepo.NewRepo(userrepoOption)
 	userbizOption := &userbiz.Option{
 		UserRepo: userrepoIRepo,
 	}
-	iUserService := userbiz.NewService(userbizOption)
+	iUserBiz := userbiz.NewBiz(userbizOption)
+	userserviceOption := &userservice.Option{
+		UserBiz: iUserBiz,
+	}
+	iUserService := userservice.NewService(userserviceOption)
 	authbizOption := &authbiz.Option{
 		UserRepo: userrepoIRepo,
 	}
-	iAuthService := authbiz.NewService(authbizOption)
+	iAuthBiz := authbiz.NewBiz(authbizOption)
+	authserviceOption := &authservice.Option{
+		AuthBiz: iAuthBiz,
+	}
+	iAuthService := authservice.NewService(authserviceOption)
 	serviceOption := &service.Option{
 		Mux:         serveMux,
 		Interceptor: iInterceptor,

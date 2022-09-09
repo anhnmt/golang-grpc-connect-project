@@ -4,8 +4,8 @@ import (
 	"github.com/google/wire"
 )
 
-// ProviderServiceSet is Service providers.
-var ProviderServiceSet = wire.NewSet(
-	NewService,
+// ProviderBizSet is Biz providers.
+var ProviderBizSet = wire.NewSet(
+	NewBiz,
 	wire.Struct(new(Option), "*"),
 )

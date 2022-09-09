@@ -1,7 +1,6 @@
 package authbiz
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	authv1 "github.com/xdorro/proto-base-project/proto-gen-go/auth/v1"
-	"github.com/xdorro/proto-base-project/proto-gen-go/auth/v1/authv1connect"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/sync/errgroup"
@@ -20,19 +18,19 @@ import (
 	"github.com/xdorro/golang-grpc-base-project/utils"
 )
 
-var _ IAuthService = &Service{}
+var _ IAuthBiz = &Biz{}
 
-// IAuthService auth service interface.
-type IAuthService interface {
-	authv1connect.AuthServiceHandler
+// IAuthBiz auth service interface.
+type IAuthBiz interface {
+	Login(req *connect.Request[authv1.LoginRequest]) (*connect.Response[authv1.TokenResponse], error)
+	RevokeToken(req *connect.Request[authv1.TokenRequest]) (*connect.Response[authv1.CommonResponse], error)
+	RefreshToken(req *connect.Request[authv1.TokenRequest]) (*connect.Response[authv1.TokenResponse], error)
 }
 
-// Service struct.
-type Service struct {
+// Biz struct.
+type Biz struct {
 	// option
 	userRepo userrepo.IRepo
-
-	authv1connect.UnimplementedAuthServiceHandler
 }
 
 // Option service option.
@@ -40,17 +38,16 @@ type Option struct {
 	UserRepo userrepo.IRepo
 }
 
-// NewService new service.
-func NewService(opt *Option) IAuthService {
-	s := &Service{
+// NewBiz new service.
+func NewBiz(opt *Option) IAuthBiz {
+	s := &Biz{
 		userRepo: opt.UserRepo,
 	}
 
 	return s
 }
 
-// Login is the auth.v1.AuthService.Login method.
-func (s *Service) Login(_ context.Context, req *connect.Request[authv1.LoginRequest]) (
+func (s *Biz) Login(req *connect.Request[authv1.LoginRequest]) (
 	*connect.Response[authv1.TokenResponse], error,
 ) {
 	filter := bson.M{
@@ -78,8 +75,8 @@ func (s *Service) Login(_ context.Context, req *connect.Request[authv1.LoginRequ
 	return connect.NewResponse(res), nil
 }
 
-// RevokeToken is the auth.v1.AuthService.RevokeToken method.
-func (s *Service) RevokeToken(_ context.Context, req *connect.Request[authv1.TokenRequest]) (
+// RevokeToken is the auth.v1.AuthBiz.RevokeToken method.
+func (s *Biz) RevokeToken(req *connect.Request[authv1.TokenRequest]) (
 	*connect.Response[authv1.CommonResponse], error,
 ) {
 	token := req.Msg.GetToken()
@@ -97,8 +94,8 @@ func (s *Service) RevokeToken(_ context.Context, req *connect.Request[authv1.Tok
 	return connect.NewResponse(res), nil
 }
 
-// RefreshToken is the auth.v1.AuthService.RefreshToken method.
-func (s *Service) RefreshToken(_ context.Context, req *connect.Request[authv1.TokenRequest]) (
+// RefreshToken is the auth.v1.AuthBiz.RefreshToken method.
+func (s *Biz) RefreshToken(req *connect.Request[authv1.TokenRequest]) (
 	*connect.Response[authv1.TokenResponse], error,
 ) {
 	// verify & remove old token
@@ -134,7 +131,7 @@ func (s *Service) RefreshToken(_ context.Context, req *connect.Request[authv1.To
 }
 
 // generateAuthToken generates a new auth token for the user.
-func (s *Service) generateAuthToken(data *usermodel.User) (
+func (s *Biz) generateAuthToken(data *usermodel.User) (
 	*authv1.TokenResponse, error,
 ) {
 	uid := data.ID.Hex()
@@ -198,7 +195,7 @@ func (s *Service) generateAuthToken(data *usermodel.User) (
 }
 
 // removeAuthToken removes the auth token from the redis.
-func (s *Service) removeAuthToken(token string) (*jwt.RegisteredClaims, error) {
+func (s *Biz) removeAuthToken(token string) (*jwt.RegisteredClaims, error) {
 	// verify refresh token
 	claims, err := utils.DecryptToken(token)
 	if err != nil {

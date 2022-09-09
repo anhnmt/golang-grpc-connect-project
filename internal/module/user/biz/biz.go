@@ -1,14 +1,12 @@
 package userbiz
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/bufbuild/connect-go"
 	"github.com/rs/zerolog/log"
 	userv1 "github.com/xdorro/proto-base-project/proto-gen-go/user/v1"
-	"github.com/xdorro/proto-base-project/proto-gen-go/user/v1/userv1connect"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -18,19 +16,23 @@ import (
 	"github.com/xdorro/golang-grpc-base-project/utils"
 )
 
-var _ IUserService = &Service{}
+var _ IUserBiz = &Biz{}
 
-// IUserService user service interface.
-type IUserService interface {
-	userv1connect.UserServiceHandler
+// IUserBiz user service interface.
+type IUserBiz interface {
+	FindAllUsers(req *connect.Request[userv1.FindAllUsersRequest]) (
+		*connect.Response[userv1.FindAllUsersResponse], error,
+	)
+	FindUserByID(req *connect.Request[userv1.CommonUUIDRequest]) (*connect.Response[userv1.User], error)
+	CreateUser(req *connect.Request[userv1.CreateUserRequest]) (*connect.Response[userv1.CommonResponse], error)
+	UpdateUser(req *connect.Request[userv1.UpdateUserRequest]) (*connect.Response[userv1.CommonResponse], error)
+	DeleteUser(req *connect.Request[userv1.CommonUUIDRequest]) (*connect.Response[userv1.CommonResponse], error)
 }
 
-// Service struct.
-type Service struct {
+// Biz struct.
+type Biz struct {
 	// option
 	userRepo userrepo.IRepo
-
-	userv1connect.UnimplementedUserServiceHandler
 }
 
 // Option service option.
@@ -38,20 +40,19 @@ type Option struct {
 	UserRepo userrepo.IRepo
 }
 
-// NewService new service.
-func NewService(opt *Option) IUserService {
-	s := &Service{
+// NewBiz new service.
+func NewBiz(opt *Option) IUserBiz {
+	s := &Biz{
 		userRepo: opt.UserRepo,
 	}
 
 	return s
 }
 
-// FindAllUsers is the user.v1.UserService.FindAllUsers method.
-func (s *Service) FindAllUsers(_ context.Context, req *connect.Request[userv1.FindAllUsersRequest]) (
+// FindAllUsers is the user.v1.UserBiz.FindAllUsers method.
+func (s *Biz) FindAllUsers(req *connect.Request[userv1.FindAllUsersRequest]) (
 	*connect.Response[userv1.FindAllUsersResponse], error,
 ) {
-
 	// count all users with filter
 	filter := bson.M{
 		"deleted_at": bson.M{
@@ -84,8 +85,8 @@ func (s *Service) FindAllUsers(_ context.Context, req *connect.Request[userv1.Fi
 	return connect.NewResponse(res), nil
 }
 
-// FindUserByID is the user.v1.UserService.FindUserByID method.
-func (s *Service) FindUserByID(_ context.Context, req *connect.Request[userv1.CommonUUIDRequest]) (
+// FindUserByID is the user.v1.UserBiz.FindUserByID method.
+func (s *Biz) FindUserByID(req *connect.Request[userv1.CommonUUIDRequest]) (
 	*connect.Response[userv1.User], error,
 ) {
 	id, err := primitive.ObjectIDFromHex(req.Msg.GetId())
@@ -115,8 +116,8 @@ func (s *Service) FindUserByID(_ context.Context, req *connect.Request[userv1.Co
 	return connect.NewResponse(res), nil
 }
 
-// CreateUser is the user.v1.UserService.CreateUser method.
-func (s *Service) CreateUser(_ context.Context, req *connect.Request[userv1.CreateUserRequest]) (
+// CreateUser is the user.v1.UserBiz.CreateUser method.
+func (s *Biz) CreateUser(req *connect.Request[userv1.CreateUserRequest]) (
 	*connect.Response[userv1.CommonResponse], error,
 ) {
 	// count all users with filter
@@ -159,8 +160,8 @@ func (s *Service) CreateUser(_ context.Context, req *connect.Request[userv1.Crea
 	return connect.NewResponse(res), nil
 }
 
-// UpdateUser is the user.v1.UserService.UpdateUser method.
-func (s *Service) UpdateUser(_ context.Context, req *connect.Request[userv1.UpdateUserRequest]) (
+// UpdateUser is the user.v1.UserBiz.UpdateUser method.
+func (s *Biz) UpdateUser(req *connect.Request[userv1.UpdateUserRequest]) (
 	*connect.Response[userv1.CommonResponse], error,
 ) {
 	id, err := primitive.ObjectIDFromHex(req.Msg.GetId())
@@ -204,8 +205,8 @@ func (s *Service) UpdateUser(_ context.Context, req *connect.Request[userv1.Upda
 	return connect.NewResponse(res), nil
 }
 
-// DeleteUser is the user.v1.UserService.DeleteUser method.
-func (s *Service) DeleteUser(_ context.Context, req *connect.Request[userv1.CommonUUIDRequest]) (
+// DeleteUser is the user.v1.UserBiz.DeleteUser method.
+func (s *Biz) DeleteUser(req *connect.Request[userv1.CommonUUIDRequest]) (
 	*connect.Response[userv1.CommonResponse], error,
 ) {
 	id, err := primitive.ObjectIDFromHex(req.Msg.GetId())
