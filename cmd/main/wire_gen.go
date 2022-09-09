@@ -33,7 +33,9 @@ func initServer() server.IServer {
 		UserRepo: userrepoIRepo,
 	}
 	iUserService := userbiz.NewService(userbizOption)
-	authbizOption := &authbiz.Option{}
+	authbizOption := &authbiz.Option{
+		UserRepo: userrepoIRepo,
+	}
 	iAuthService := authbiz.NewService(authbizOption)
 	serviceOption := &service.Option{
 		Mux:         serveMux,
