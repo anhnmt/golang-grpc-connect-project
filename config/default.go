@@ -9,6 +9,7 @@ func defaultConfig() {
 	// APP
 	viper.SetDefault("APP_NAME", "golang-grpc-base-project")
 	viper.SetDefault("APP_PORT", 8088)
+	viper.SetDefault("PPROF_PORT", 6606)
 	viper.SetDefault("APP_DEBUG", true)
 	viper.SetDefault("APP_SECRET", "your-256-bit-secret")
 
