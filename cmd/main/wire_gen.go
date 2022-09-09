@@ -11,8 +11,10 @@ import (
 	"github.com/xdorro/golang-grpc-base-project/internal/module/auth/biz"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/ping/biz"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/user/biz"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
+	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 	"net/http"
 )
 
@@ -22,8 +24,15 @@ func initServer() server.IServer {
 	serveMux := http.NewServeMux()
 	iInterceptor := interceptor.NewInterceptor()
 	iPingService := pingbiz.NewService()
-	option := &userbiz.Option{}
-	iUserService := userbiz.NewService(option)
+	iRepo := repo.NewRepo()
+	option := &userrepo.Option{
+		Repo: iRepo,
+	}
+	userrepoIRepo := userrepo.NewRepo(option)
+	userbizOption := &userbiz.Option{
+		UserRepo: userrepoIRepo,
+	}
+	iUserService := userbiz.NewService(userbizOption)
 	authbizOption := &authbiz.Option{}
 	iAuthService := authbiz.NewService(authbizOption)
 	serviceOption := &service.Option{

@@ -2,6 +2,8 @@ package userbiz
 
 import (
 	"github.com/xdorro/proto-base-project/proto-gen-go/user/v1/userv1connect"
+
+	userrepo "github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
 )
 
 var _ IUserService = &Service{}
@@ -14,17 +16,21 @@ type IUserService interface {
 // Service struct.
 type Service struct {
 	// option
+	userRepo userrepo.IRepo
 
 	userv1connect.UnimplementedUserServiceHandler
 }
 
 // Option service option.
 type Option struct {
+	UserRepo userrepo.IRepo
 }
 
 // NewService new service.
-func NewService(*Option) IUserService {
-	s := &Service{}
+func NewService(opt *Option) IUserService {
+	s := &Service{
+		userRepo: opt.UserRepo,
+	}
 
 	return s
 }
