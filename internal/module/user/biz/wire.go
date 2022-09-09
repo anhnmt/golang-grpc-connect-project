@@ -1,4 +1,4 @@
-package user
+package userbiz
 
 import (
 	"github.com/google/wire"

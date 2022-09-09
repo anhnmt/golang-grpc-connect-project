@@ -1,4 +1,4 @@
-package auth
+package authbiz
 
 import (
 	"github.com/xdorro/proto-base-project/proto-gen-go/auth/v1/authv1connect"
@@ -23,7 +23,7 @@ type Option struct {
 }
 
 // NewService new service.
-func NewService(opt *Option) IAuthService {
+func NewService(*Option) IAuthService {
 	s := &Service{}
 
 	return s

@@ -14,9 +14,9 @@ import (
 	"github.com/xdorro/proto-base-project/proto-gen-go/user/v1/userv1connect"
 
 	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
-	"github.com/xdorro/golang-grpc-base-project/internal/usecase/auth"
-	"github.com/xdorro/golang-grpc-base-project/internal/usecase/ping"
-	"github.com/xdorro/golang-grpc-base-project/internal/usecase/user"
+	authbiz "github.com/xdorro/golang-grpc-base-project/internal/module/auth/biz"
+	pingbiz "github.com/xdorro/golang-grpc-base-project/internal/module/ping/biz"
+	userbiz "github.com/xdorro/golang-grpc-base-project/internal/module/user/biz"
 )
 
 var _ IService = &Service{}
@@ -30,9 +30,9 @@ type Option struct {
 	Mux         *http.ServeMux
 	Interceptor interceptor.IInterceptor
 
-	PingService ping.IPingService
-	UserService user.IUserService
-	AuthService auth.IAuthService
+	PingService pingbiz.IPingService
+	UserService userbiz.IUserService
+	AuthService authbiz.IAuthService
 }
 
 // Service struct.

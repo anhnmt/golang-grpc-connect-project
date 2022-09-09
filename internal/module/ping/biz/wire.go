@@ -1,4 +1,4 @@
-package ping
+package pingbiz
 
 import (
 	"github.com/google/wire"

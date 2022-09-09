@@ -1,4 +1,4 @@
-package user
+package userbiz
 
 import (
 	"github.com/xdorro/proto-base-project/proto-gen-go/user/v1/userv1connect"
@@ -23,7 +23,7 @@ type Option struct {
 }
 
 // NewService new service.
-func NewService(opt *Option) IUserService {
+func NewService(*Option) IUserService {
 	s := &Service{}
 
 	return s
