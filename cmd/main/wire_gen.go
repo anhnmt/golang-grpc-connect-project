@@ -8,11 +8,16 @@ package main
 
 import (
 	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/auth/biz"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/auth/service"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/ping/biz"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/ping/service"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/user/biz"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/user/service"
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
-	"github.com/xdorro/golang-grpc-base-project/internal/usecase/auth"
-	"github.com/xdorro/golang-grpc-base-project/internal/usecase/ping"
-	"github.com/xdorro/golang-grpc-base-project/internal/usecase/user"
+	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 	"net/http"
 )
 
@@ -21,11 +26,32 @@ import (
 func initServer() server.IServer {
 	serveMux := http.NewServeMux()
 	iInterceptor := interceptor.NewInterceptor()
-	iPingService := ping.NewService()
-	option := &user.Option{}
-	iUserService := user.NewService(option)
-	authOption := &auth.Option{}
-	iAuthService := auth.NewService(authOption)
+	iPingBiz := pingbiz.NewBiz()
+	option := &pingservice.Option{
+		PingBiz: iPingBiz,
+	}
+	iPingService := pingservice.NewService(option)
+	iRepo := repo.NewRepo()
+	userrepoOption := &userrepo.Option{
+		Repo: iRepo,
+	}
+	userrepoIRepo := userrepo.NewRepo(userrepoOption)
+	userbizOption := &userbiz.Option{
+		UserRepo: userrepoIRepo,
+	}
+	iUserBiz := userbiz.NewBiz(userbizOption)
+	userserviceOption := &userservice.Option{
+		UserBiz: iUserBiz,
+	}
+	iUserService := userservice.NewService(userserviceOption)
+	authbizOption := &authbiz.Option{
+		UserRepo: userrepoIRepo,
+	}
+	iAuthBiz := authbiz.NewBiz(authbizOption)
+	authserviceOption := &authservice.Option{
+		AuthBiz: iAuthBiz,
+	}
+	iAuthService := authservice.NewService(authserviceOption)
 	serviceOption := &service.Option{
 		Mux:         serveMux,
 		Interceptor: iInterceptor,

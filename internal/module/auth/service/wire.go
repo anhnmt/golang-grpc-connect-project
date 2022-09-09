@@ -1,4 +1,4 @@
-package auth
+package authservice
 
 import (
 	"github.com/google/wire"

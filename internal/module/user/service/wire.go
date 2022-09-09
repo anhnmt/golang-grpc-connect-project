@@ -1,4 +1,4 @@
-package ping
+package userservice
 
 import (
 	"github.com/google/wire"

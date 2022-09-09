@@ -8,18 +8,20 @@ import (
 	"github.com/google/wire"
 
 	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
+	authmodule "github.com/xdorro/golang-grpc-base-project/internal/module/auth"
+	pingmodule "github.com/xdorro/golang-grpc-base-project/internal/module/ping"
+	usermodule "github.com/xdorro/golang-grpc-base-project/internal/module/user"
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
-	"github.com/xdorro/golang-grpc-base-project/internal/usecase/auth"
-	"github.com/xdorro/golang-grpc-base-project/internal/usecase/ping"
-	"github.com/xdorro/golang-grpc-base-project/internal/usecase/user"
+	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 )
 
 func initServer() server.IServer {
 	wire.Build(
-		ping.ProviderServiceSet,
-		user.ProviderServiceSet,
-		auth.ProviderServiceSet,
+		repo.ProviderRepoSet,
+		pingmodule.ProviderModuleSet,
+		usermodule.ProviderModuleSet,
+		authmodule.ProviderModuleSet,
 		interceptor.ProviderInterceptorSet,
 		service.ProviderServiceSet,
 		server.ProviderServerSet,
