@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -23,7 +22,7 @@ var _ IServer = (*Server)(nil)
 
 // IServer Server interface.
 type IServer interface {
-	Run()
+	Run() error
 	Close() error
 }
 
@@ -69,7 +68,21 @@ func NewServer(opt *Option) IServer {
 }
 
 // Run runs the server.
-func (s *Server) Run() {
+func (s *Server) Run() error {
+	// we're going to run the different protocol servers in parallel, so
+	// make an errgroup
+	var group errgroup.Group
+
+	// we need a webserver to get the pprof webserver
+	if s.appDebug {
+		group.Go(func() error {
+			pprofPort := fmt.Sprintf(":%d", s.pprofPort)
+			log.Info().Msgf("Starting pprof http://localhost:%s", pprofPort)
+
+			return http.ListenAndServe(pprofPort, nil)
+		})
+	}
+
 	appPort := fmt.Sprintf(":%d", s.appPort)
 	log.Info().Msgf("Starting application http://localhost%s", appPort)
 
@@ -87,34 +100,21 @@ func (s *Server) Run() {
 		MaxHeaderBytes:    8 * 1024, // 8KiB
 	})
 
-	// we need a webserver to get the pprof webserver
-	if s.appDebug {
-		go func(s *Server) {
-			pprofPort := fmt.Sprintf(":%d", s.pprofPort)
-			log.Info().Msgf("Starting pprof http://localhost:%s", pprofPort)
-
-			err := http.ListenAndServe(pprofPort, nil)
-			if err != nil && !errors.Is(err, http.ErrServerClosed) {
-				log.Fatal().Err(err).Msg("Failed to run pprof server")
-			}
-		}(s)
-	}
-
 	// Serve the http server on the http listener.
-	go func(s *Server) {
-		err := s.http.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal().Err(err).Msg("Failed to run http server")
-		}
-	}(s)
+	group.Go(func() error {
+		// run the server
+		return s.http.ListenAndServe()
+	})
+
+	return group.Wait()
 }
 
 // Close closes the server.
 func (s *Server) Close() error {
-	g, gCtx := errgroup.WithContext(context.Background())
+	var group errgroup.Group
 
-	g.Go(func() error {
-		ctx, cancel := context.WithTimeout(gCtx, 10*time.Second)
+	group.Go(func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		if err := s.http.Shutdown(ctx); err != nil {
@@ -125,11 +125,7 @@ func (s *Server) Close() error {
 		return nil
 	})
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return group.Wait()
 }
 
 // Server adds a new server.
