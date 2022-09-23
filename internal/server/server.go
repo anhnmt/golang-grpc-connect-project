@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
-	"github.com/xdorro/golang-grpc-base-project/utils"
+	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
 var _ IServer = (*Server)(nil)

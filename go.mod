@@ -15,13 +15,14 @@ require (
 	github.com/spf13/viper v1.13.0
 	github.com/xdorro/proto-base-project v1.0.1
 	go.mongodb.org/mongo-driver v1.10.2
-	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
-	golang.org/x/net v0.0.0-20220909164309-bea034e7d591
+	golang.org/x/crypto v0.0.0-20220919173607-35f4265a4bc0
+	golang.org/x/net v0.0.0-20220921203646-d300de134e69
 	golang.org/x/sync v0.0.0-20220907140024-f12130a52804
 )
 
 require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/go-openapi/inflect v0.19.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.10 // indirect
@@ -42,7 +43,7 @@ require (
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
-	golang.org/x/sys v0.0.0-20220915200043-7b5979e65e41 // indirect
+	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

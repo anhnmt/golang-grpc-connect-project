@@ -13,7 +13,7 @@ import (
 
 	usermodel "github.com/xdorro/golang-grpc-base-project/internal/module/user/model"
 	userrepo "github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
-	"github.com/xdorro/golang-grpc-base-project/utils"
+	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
 var _ IUserBiz = &Biz{}

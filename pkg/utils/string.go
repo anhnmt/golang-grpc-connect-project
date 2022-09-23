@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/xdorro/golang-grpc-base-project/utils/inflect"
+	"github.com/go-openapi/inflect"
 )
 
 var (
