@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"sync"
 	"time"
 
@@ -71,7 +72,7 @@ func NewServer(opt *Option) IServer {
 func (s *Server) Run() error {
 	// we're going to run the different protocol servers in parallel, so
 	// make an errgroup
-	var group errgroup.Group
+	group := new(errgroup.Group)
 
 	// we need a webserver to get the pprof webserver
 	if s.appDebug {
@@ -83,25 +84,25 @@ func (s *Server) Run() error {
 		})
 	}
 
-	appPort := fmt.Sprintf(":%d", s.appPort)
-	log.Info().Msgf("Starting application http://localhost%s", appPort)
-
-	// create new http server
-	s.setServer(&http.Server{
-		Addr: appPort,
-		// Use h2c, so we can serve HTTP/2 without TLS.
-		Handler: h2c.NewHandler(
-			s.customHandler(),
-			&http2.Server{},
-		),
-		ReadHeaderTimeout: time.Second,
-		ReadTimeout:       1 * time.Minute,
-		WriteTimeout:      1 * time.Minute,
-		MaxHeaderBytes:    8 * 1024, // 8KiB
-	})
-
 	// Serve the http server on the http listener.
 	group.Go(func() error {
+		appPort := fmt.Sprintf(":%d", s.appPort)
+		log.Info().Msgf("Starting application http://localhost%s", appPort)
+
+		// create new http server
+		s.setServer(&http.Server{
+			Addr: appPort,
+			// Use h2c, so we can serve HTTP/2 without TLS.
+			Handler: h2c.NewHandler(
+				s.customHandler(),
+				&http2.Server{},
+			),
+			ReadHeaderTimeout: time.Second,
+			ReadTimeout:       1 * time.Minute,
+			WriteTimeout:      1 * time.Minute,
+			MaxHeaderBytes:    8 * 1024, // 8KiB
+		})
+
 		// run the server
 		return s.http.ListenAndServe()
 	})
@@ -111,7 +112,7 @@ func (s *Server) Run() error {
 
 // Close closes the server.
 func (s *Server) Close() error {
-	var group errgroup.Group
+	group := new(errgroup.Group)
 
 	group.Go(func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -123,6 +124,10 @@ func (s *Server) Close() error {
 		}
 
 		return nil
+	})
+
+	group.Go(func() error {
+		return s.service.Close()
 	})
 
 	return group.Wait()

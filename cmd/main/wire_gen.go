@@ -26,12 +26,12 @@ import (
 func initServer() server.IServer {
 	serveMux := http.NewServeMux()
 	iInterceptor := interceptor.NewInterceptor()
+	iRepo := repo.NewRepo()
 	iPingBiz := pingbiz.NewBiz()
 	option := &pingservice.Option{
 		PingBiz: iPingBiz,
 	}
 	iPingService := pingservice.NewService(option)
-	iRepo := repo.NewRepo()
 	userrepoOption := &userrepo.Option{
 		Repo: iRepo,
 	}
@@ -55,6 +55,7 @@ func initServer() server.IServer {
 	serviceOption := &service.Option{
 		Mux:         serveMux,
 		Interceptor: iInterceptor,
+		Repo:        iRepo,
 		PingService: iPingService,
 		UserService: iUserService,
 		AuthService: iAuthService,
