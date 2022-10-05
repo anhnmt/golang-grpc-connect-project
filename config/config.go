@@ -17,6 +17,11 @@ func NewConfig() {
 	// Set default values
 	defaultConfig()
 
+	viper.AddConfigPath(".")
+	viper.SetConfigType("env")
+	viper.SetConfigFile(".env")
+	_ = viper.ReadInConfig()
+
 	// Set default logger
 	defaultLogger()
 
