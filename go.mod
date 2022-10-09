@@ -10,6 +10,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/uuid v1.3.0
 	github.com/google/wire v0.5.1-0.20220620021424-0675cdc9191c
+	github.com/json-iterator/go v1.1.12
 	github.com/natefinch/lumberjack/v3 v3.0.0-alpha.0.20220626135211-305d3e2979e7
 	github.com/rs/cors v1.8.2
 	github.com/rs/zerolog v1.28.0
@@ -25,7 +26,6 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
