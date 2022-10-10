@@ -76,7 +76,7 @@ func (m *User) ComparePassword(password string) bool {
 // UserToProto converts a user to a proto
 func UserToProto(m *User) *userv1.User {
 	return &userv1.User{
-		Id:    m.ID.Hex(),
+		Id:    m.ID,
 		Name:  m.Name,
 		Email: m.Email,
 		Role:  m.Role,

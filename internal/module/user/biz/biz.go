@@ -153,9 +153,9 @@ func (s *Biz) CreateUser(req *connect.Request[userv1.CreateUserRequest]) (
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	resID := oid.InsertedID.(primitive.ObjectID)
+	resID := oid.InsertedID.(string)
 	res := &userv1.CommonResponse{
-		Data: resID.Hex(),
+		Data: resID,
 	}
 	return connect.NewResponse(res), nil
 }

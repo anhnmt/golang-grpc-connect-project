@@ -134,7 +134,7 @@ func (s *Biz) RefreshToken(req *connect.Request[authv1.TokenRequest]) (
 func (s *Biz) generateAuthToken(data *usermodel.User) (
 	*authv1.TokenResponse, error,
 ) {
-	uid := data.ID.Hex()
+	uid := data.ID
 	sessionID := uuid.NewString()
 	now := time.Now()
 	refreshExpire := now.Add(utils.RefreshExpire)
