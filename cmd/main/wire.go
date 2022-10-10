@@ -9,7 +9,6 @@ import (
 
 	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
 	authmodule "github.com/xdorro/golang-grpc-base-project/internal/module/auth"
-	pingmodule "github.com/xdorro/golang-grpc-base-project/internal/module/ping"
 	usermodule "github.com/xdorro/golang-grpc-base-project/internal/module/user"
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
@@ -19,7 +18,6 @@ import (
 func initServer() server.IServer {
 	wire.Build(
 		repo.ProviderRepoSet,
-		pingmodule.ProviderModuleSet,
 		usermodule.ProviderModuleSet,
 		authmodule.ProviderModuleSet,
 		interceptor.ProviderInterceptorSet,

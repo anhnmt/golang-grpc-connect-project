@@ -10,13 +10,11 @@ import (
 	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
 	"github.com/rs/zerolog/log"
 	"github.com/xdorro/proto-base-project/proto-gen-go/auth/v1/authv1connect"
-	"github.com/xdorro/proto-base-project/proto-gen-go/ping/v1/pingv1connect"
 	"github.com/xdorro/proto-base-project/proto-gen-go/user/v1/userv1connect"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
 	authservice "github.com/xdorro/golang-grpc-base-project/internal/module/auth/service"
-	pingservice "github.com/xdorro/golang-grpc-base-project/internal/module/ping/service"
 	userservice "github.com/xdorro/golang-grpc-base-project/internal/module/user/service"
 	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 )
@@ -34,7 +32,6 @@ type Option struct {
 	Interceptor interceptor.IInterceptor
 	Repo        repo.IRepo
 
-	PingService pingservice.IPingService
 	UserService userservice.IUserService
 	AuthService authservice.IAuthService
 }
@@ -64,7 +61,6 @@ func NewService(opt *Option) IService {
 	)
 
 	// Add your handlers here
-	s.addHandler(pingv1connect.NewPingServiceHandler(opt.PingService, connectOption))
 	s.addHandler(userv1connect.NewUserServiceHandler(opt.UserService, connectOption))
 	s.addHandler(authv1connect.NewAuthServiceHandler(opt.AuthService, connectOption))
 

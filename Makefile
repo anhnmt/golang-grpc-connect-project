@@ -21,9 +21,9 @@ lint.run:
 	golangci-lint run --fast ./...
 
 go.install:
-	go install github.com/google/wire/cmd/wire@latest
+	go install github.com/google/wire/cmd/wire@v0.5.0
 
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.0
 
 go.gen: wire.gen
 
