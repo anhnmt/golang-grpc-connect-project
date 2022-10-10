@@ -1,0 +1,39 @@
+[app]
+name = "golang-grpc-base-project"
+port = 8088
+debug = true
+secret = "your-256-bit-secret"
+
+[pprof]
+port = 6060
+
+[log]
+payload = true
+file = "logs/data.log"
+
+[mongodb]
+url = "mongodb://root:123456aA%40@localhost:27017"
+name = "base"
+
+[redis]
+url = "localhost:16379"
+password = ""
+db = 0
+
+[casbin]
+model = """
+[request_definition]
+r = sub, obj
+
+[policy_definition]
+p = sub, obj
+
+[role_definition]
+g = _, _
+
+[policy_effect]
+e = some(where (p.eft == allow))
+
+[matchers]
+m = (g(r.sub, p.sub) || keyMatch(r.sub, p.sub)) && keyMatch(r.obj, p.obj)
+"""

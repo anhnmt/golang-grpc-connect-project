@@ -1,29 +1,36 @@
 package config
 
 import (
+	"fmt"
+	"os"
 	"runtime"
-	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
 // NewConfig initializes the config
-func NewConfig() {
+func NewConfig(env string) {
 	viper.AutomaticEnv()
-	// Replace env key
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// Set default values
-	defaultConfig()
+	// Replace env key
+	// viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error get current path")
+	}
 
 	viper.AddConfigPath(".")
-	viper.SetConfigType("env")
-	viper.SetConfigFile(".env")
-	_ = viper.ReadInConfig()
+	viper.AddConfigPath(fmt.Sprintf("%s/config", pwd))
+	// viper.SetConfigFile(fmt.Sprintf("%s/config/%s.toml", pwd, env))
 
-	// Set default logger
-	defaultLogger()
+	viper.SetConfigType("toml")
+	viper.SetConfigName(env)
+
+	if err = viper.ReadInConfig(); err != nil {
+		log.Fatal().Err(err).Msg("Error reading config file")
+	}
 
 	log.Info().
 		Str("goarch", runtime.GOARCH).

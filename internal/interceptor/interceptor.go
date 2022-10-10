@@ -27,7 +27,7 @@ type Interceptor struct {
 // NewInterceptor returns a new interceptor.
 func NewInterceptor() IInterceptor {
 	i := &Interceptor{
-		logPayload: viper.GetBool("LOG_PAYLOAD"),
+		logPayload: viper.GetBool("log.payload"),
 	}
 
 	return i

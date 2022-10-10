@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,10 +12,18 @@ import (
 
 	"github.com/xdorro/golang-grpc-base-project/config"
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
+	"github.com/xdorro/golang-grpc-base-project/pkg/logger"
 )
 
 func init() {
-	config.NewConfig()
+	// -env is option for command line
+	env := flag.String("env", "local", "environment")
+	// -log_file is option for command line
+	logFile := flag.String("log_file", "logs/data.log", "log file path")
+	flag.Parse()
+
+	logger.NewLogger(*logFile)
+	config.NewConfig(*env)
 }
 
 func main() {

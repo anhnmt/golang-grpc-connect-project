@@ -52,10 +52,10 @@ type Option struct {
 // NewServer new server.
 func NewServer(opt *Option) IServer {
 	s := &Server{
-		appName:   viper.GetString("APP_NAME"),
-		appPort:   viper.GetInt("APP_PORT"),
-		pprofPort: viper.GetInt("PPROF_PORT"),
-		appDebug:  viper.GetBool("APP_DEBUG"),
+		appName:   viper.GetString("app.name"),
+		appDebug:  viper.GetBool("app.debug"),
+		appPort:   viper.GetInt("app.port"),
+		pprofPort: viper.GetInt("pprof.port"),
 		mux:       opt.Mux,
 		service:   opt.Service,
 	}

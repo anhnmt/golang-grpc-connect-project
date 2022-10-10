@@ -36,8 +36,8 @@ type Repo struct {
 func NewRepo() IRepo {
 	r := &Repo{
 		ctx:    context.Background(),
-		dbURL:  viper.GetString("DB_URL"),
-		dbName: viper.GetString("DB_NAME"),
+		dbURL:  viper.GetString("mongodb.url"),
+		dbName: viper.GetString("mongodb.name"),
 	}
 
 	log.Info().
