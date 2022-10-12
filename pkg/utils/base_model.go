@@ -1,12 +1,10 @@
-package model
+package utils
 
 import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
 var _ IBaseModel = &BaseModel{}
@@ -29,7 +27,7 @@ type BaseModel struct {
 
 // CollectionName returns the name of the collection from struct name
 func (m *BaseModel) CollectionName() string {
-	return utils.CollectionName(m)
+	return CollectionName(m)
 }
 
 // PreCreate is a callback that gets called before creating a models.
