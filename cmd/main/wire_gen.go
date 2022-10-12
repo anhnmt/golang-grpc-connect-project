@@ -10,6 +10,9 @@ import (
 	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/auth/biz"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/auth/service"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/permission/biz"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/permission/repo"
+	"github.com/xdorro/golang-grpc-base-project/internal/module/permission/service"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/user/biz"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/user/service"
@@ -56,12 +59,25 @@ func initServer() server.IServer {
 		AuthBiz: iAuthBiz,
 	}
 	iAuthService := authservice.NewService(authserviceOption)
+	permissionrepoOption := &permissionrepo.Option{
+		Repo: iRepo,
+	}
+	permissionrepoIRepo := permissionrepo.NewRepo(permissionrepoOption)
+	permissionbizOption := &permissionbiz.Option{
+		PermissionRepo: permissionrepoIRepo,
+	}
+	iPermissionBiz := permissionbiz.NewBiz(permissionbizOption)
+	permissionserviceOption := &permissionservice.Option{
+		PermissionBiz: iPermissionBiz,
+	}
+	iPermissionService := permissionservice.NewService(permissionserviceOption)
 	serviceOption := &service.Option{
-		Mux:         serveMux,
-		Interceptor: iInterceptor,
-		Repo:        iRepo,
-		UserService: iUserService,
-		AuthService: iAuthService,
+		Mux:               serveMux,
+		Interceptor:       iInterceptor,
+		Repo:              iRepo,
+		UserService:       iUserService,
+		AuthService:       iAuthService,
+		PermissionService: iPermissionService,
 	}
 	iService := service.NewService(serviceOption)
 	serverOption := &server.Option{
