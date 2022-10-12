@@ -19,8 +19,8 @@ func NewConfig(env string) {
 	pwd, _ := os.Getwd()
 	viper.AddConfigPath(".")
 	viper.AddConfigPath(fmt.Sprintf("%s/config", pwd))
-	// viper.SetConfigFile(fmt.Sprintf("%s/config/%s.toml", pwd, env))
 
+	viper.SetConfigFile(fmt.Sprintf("%s/config/%s.toml", pwd, env))
 	viper.SetConfigType("toml")
 	viper.SetConfigName(env)
 

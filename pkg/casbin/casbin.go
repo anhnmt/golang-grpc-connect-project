@@ -8,7 +8,8 @@ import (
 	mongodbadapter "github.com/casbin/mongodb-adapter/v3"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 )
 
 var _ ICasbin = (*Casbin)(nil)
@@ -18,30 +19,39 @@ type ICasbin interface {
 	Enforcer() *casbin.CachedEnforcer
 }
 
+// Option casbin option.
+type Option struct {
+	Repo repo.IRepo
+}
+
 // Casbin is a casbin struct.
 type Casbin struct {
 	mu          sync.Mutex
-	dbURL       string
 	dbName      string
 	casbinModel string
 	casbinName  string
+	enforcer    *casbin.CachedEnforcer
 
-	enforcer *casbin.CachedEnforcer
+	// options
+	repo repo.IRepo
 }
 
 // NewCasbin creates a new casbin.
-func NewCasbin() ICasbin {
+func NewCasbin(opt *Option) ICasbin {
 	c := &Casbin{
-		dbURL:       viper.GetString("mongodb.url"),
-		dbName:      viper.GetString("mongodb.name"),
+		repo:        opt.Repo,
+		dbName:      viper.GetString("database.name"),
 		casbinModel: viper.GetString("casbin.model"),
 		casbinName:  viper.GetString("casbin.name"),
 	}
 
-	clientOpts := options.Client().
-		ApplyURI(c.dbURL)
+	log.Info().Msg("Connecting to Casbin")
 
-	adapter, err := mongodbadapter.NewAdapterWithCollectionName(clientOpts, c.dbName, c.casbinName)
+	config := &mongodbadapter.AdapterConfig{
+		DatabaseName:   c.dbName,
+		CollectionName: c.casbinName,
+	}
+	adapter, err := mongodbadapter.NewAdapterByDB(c.repo.Client(), config)
 	if err != nil {
 		log.Panic().Err(err).Msg("Failed to create mongodb adapter")
 	}

@@ -19,9 +19,9 @@ import (
 func initServer() server.IServer {
 	wire.Build(
 		repo.ProviderRepoSet,
-		casbin.ProviderCasbinSet,
 		usermodule.ProviderModuleSet,
 		authmodule.ProviderModuleSet,
+		casbin.ProviderCasbinSet,
 		interceptor.ProviderInterceptorSet,
 		service.ProviderServiceSet,
 		server.ProviderServerSet,

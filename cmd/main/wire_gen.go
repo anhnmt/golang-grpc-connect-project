@@ -24,12 +24,15 @@ import (
 
 func initServer() server.IServer {
 	serveMux := http.NewServeMux()
-	iCasbin := casbin.NewCasbin()
-	option := &interceptor.Option{
+	iRepo := repo.NewRepo()
+	option := &casbin.Option{
+		Repo: iRepo,
+	}
+	iCasbin := casbin.NewCasbin(option)
+	interceptorOption := &interceptor.Option{
 		Casbin: iCasbin,
 	}
-	iInterceptor := interceptor.NewInterceptor(option)
-	iRepo := repo.NewRepo()
+	iInterceptor := interceptor.NewInterceptor(interceptorOption)
 	userrepoOption := &userrepo.Option{
 		Repo: iRepo,
 	}
