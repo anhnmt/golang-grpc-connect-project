@@ -16,11 +16,7 @@ func NewConfig(env string) {
 	// Replace env key
 	// viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	pwd, err := os.Getwd()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error get current path")
-	}
-
+	pwd, _ := os.Getwd()
 	viper.AddConfigPath(".")
 	viper.AddConfigPath(fmt.Sprintf("%s/config", pwd))
 	// viper.SetConfigFile(fmt.Sprintf("%s/config/%s.toml", pwd, env))
@@ -28,7 +24,7 @@ func NewConfig(env string) {
 	viper.SetConfigType("toml")
 	viper.SetConfigName(env)
 
-	if err = viper.ReadInConfig(); err != nil {
+	if err := viper.ReadInConfig(); err != nil {
 		log.Fatal().Err(err).Msg("Error reading config file")
 	}
 
