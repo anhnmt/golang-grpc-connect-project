@@ -17,6 +17,7 @@ var _ IRepo = (*Repo)(nil)
 
 // IRepo is the interface that must be implemented by a repository.
 type IRepo interface {
+	Client() *mongo.Client
 	Close() error
 	Collection(name string) *mongo.Collection
 	CollectionModel(model model.IBaseModel) *mongo.Collection
@@ -25,7 +26,6 @@ type IRepo interface {
 // Repo is a repository struct.
 type Repo struct {
 	mu     sync.Mutex
-	ctx    context.Context
 	dbURL  string
 	dbName string
 
@@ -35,9 +35,8 @@ type Repo struct {
 // NewRepo creates a new repository.
 func NewRepo() IRepo {
 	r := &Repo{
-		ctx:    context.Background(),
-		dbURL:  viper.GetString("mongodb.url"),
-		dbName: viper.GetString("mongodb.name"),
+		dbURL:  viper.GetString("database.url"),
+		dbName: viper.GetString("database.name"),
 	}
 
 	log.Info().
@@ -46,7 +45,7 @@ func NewRepo() IRepo {
 		Msg("Connecting to MongoDB")
 
 	// Set connect timeout to 15 seconds
-	ctxConn, cancel := context.WithTimeout(r.ctx, 15*time.Second)
+	ctxConn, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	clientOpts := options.Client().
@@ -73,7 +72,7 @@ func NewRepo() IRepo {
 
 // Close closes the repository.
 func (r *Repo) Close() error {
-	ctx, cancel := context.WithTimeout(r.ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := r.client.Disconnect(ctx); err != nil {
@@ -94,9 +93,14 @@ func (r *Repo) CollectionModel(model model.IBaseModel) *mongo.Collection {
 	return r.Collection(model.CollectionName())
 }
 
+// Client returns the mongo client
+func (r *Repo) Client() *mongo.Client {
+	return r.client
+}
+
 // setClient adds a new client to the repository.
 func (r *Repo) setClient(client *mongo.Client) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	r.client = client
+	r.mu.Unlock()
 }

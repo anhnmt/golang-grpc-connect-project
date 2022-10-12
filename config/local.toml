@@ -1,6 +1,6 @@
 [app]
 name = "golang-grpc-base-project"
-port = 8088
+port = 5000
 debug = true
 secret = "your-256-bit-secret"
 
@@ -11,7 +11,7 @@ port = 6060
 payload = true
 file = "logs/data.log"
 
-[mongodb]
+[database]
 url = "mongodb://root:123456aA%40@localhost:27017"
 name = "base"
 
@@ -21,6 +21,7 @@ password = ""
 db = 0
 
 [casbin]
+name = "roles"
 model = """
 [request_definition]
 r = sub, obj

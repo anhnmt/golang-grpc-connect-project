@@ -12,6 +12,7 @@ import (
 	usermodule "github.com/xdorro/golang-grpc-base-project/internal/module/user"
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
+	"github.com/xdorro/golang-grpc-base-project/pkg/casbin"
 	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 )
 
@@ -20,6 +21,7 @@ func initServer() server.IServer {
 		repo.ProviderRepoSet,
 		usermodule.ProviderModuleSet,
 		authmodule.ProviderModuleSet,
+		casbin.ProviderCasbinSet,
 		interceptor.ProviderInterceptorSet,
 		service.ProviderServiceSet,
 		server.ProviderServerSet,
