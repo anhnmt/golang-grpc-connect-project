@@ -16,6 +16,7 @@ import (
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
 	"github.com/xdorro/golang-grpc-base-project/pkg/casbin"
+	"github.com/xdorro/golang-grpc-base-project/pkg/redis"
 	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 	"net/http"
 )
@@ -24,12 +25,14 @@ import (
 
 func initServer() server.IServer {
 	serveMux := http.NewServeMux()
+	iRedis := redis.NewRedis()
 	iRepo := repo.NewRepo()
 	option := &casbin.Option{
 		Repo: iRepo,
 	}
 	iCasbin := casbin.NewCasbin(option)
 	interceptorOption := &interceptor.Option{
+		Redis:  iRedis,
 		Casbin: iCasbin,
 	}
 	iInterceptor := interceptor.NewInterceptor(interceptorOption)

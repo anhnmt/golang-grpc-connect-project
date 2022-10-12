@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/xdorro/golang-grpc-base-project/pkg/casbin"
+	"github.com/xdorro/golang-grpc-base-project/pkg/redis"
 )
 
 var _ IInterceptor = (*Interceptor)(nil)
@@ -19,6 +20,7 @@ type IInterceptor interface {
 
 // Option is an interceptor option struct.
 type Option struct {
+	Redis  redis.IRedis
 	Casbin casbin.ICasbin
 }
 
@@ -27,6 +29,7 @@ type Interceptor struct {
 	logPayload bool
 
 	// options
+	redis  redis.IRedis
 	casbin casbin.ICasbin
 }
 
@@ -34,6 +37,7 @@ type Interceptor struct {
 func NewInterceptor(opt *Option) IInterceptor {
 	i := &Interceptor{
 		logPayload: viper.GetBool("log.payload"),
+		redis:      opt.Redis,
 		casbin:     opt.Casbin,
 	}
 
