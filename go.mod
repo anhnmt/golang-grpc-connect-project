@@ -6,6 +6,8 @@ require (
 	github.com/bufbuild/connect-go v1.0.0
 	github.com/bufbuild/connect-grpchealth-go v1.0.0
 	github.com/bufbuild/connect-grpcreflect-go v1.0.0
+	github.com/casbin/casbin/v2 v2.55.1
+	github.com/casbin/mongodb-adapter/v3 v3.4.1
 	github.com/go-openapi/inflect v0.19.0
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/uuid v1.3.0
@@ -23,6 +25,7 @@ require (
 )
 
 require (
+	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

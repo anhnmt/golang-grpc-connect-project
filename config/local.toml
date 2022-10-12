@@ -21,6 +21,7 @@ password = ""
 db = 0
 
 [casbin]
+name = "roles"
 model = """
 [request_definition]
 r = sub, obj
