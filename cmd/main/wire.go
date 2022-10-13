@@ -10,6 +10,7 @@ import (
 	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
 	authmodule "github.com/xdorro/golang-grpc-base-project/internal/module/auth"
 	permissionmodule "github.com/xdorro/golang-grpc-base-project/internal/module/permission"
+	rolemodule "github.com/xdorro/golang-grpc-base-project/internal/module/role"
 	usermodule "github.com/xdorro/golang-grpc-base-project/internal/module/user"
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
@@ -22,6 +23,7 @@ func initServer() server.IServer {
 	wire.Build(
 		repo.ProviderRepoSet,
 		redis.ProviderRedisSet,
+		rolemodule.ProviderModuleSet,
 		permissionmodule.ProviderModuleSet,
 		usermodule.ProviderModuleSet,
 		authmodule.ProviderModuleSet,

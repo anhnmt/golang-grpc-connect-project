@@ -20,8 +20,8 @@ type IInterceptor interface {
 
 // Option is an interceptor option struct.
 type Option struct {
-	Redis  redis.IRedis
 	Casbin casbin.ICasbin
+	Redis  redis.IRedis
 }
 
 // Interceptor is an interceptor struct.
@@ -29,16 +29,16 @@ type Interceptor struct {
 	logPayload bool
 
 	// options
-	redis  redis.IRedis
 	casbin casbin.ICasbin
+	redis  redis.IRedis
 }
 
 // NewInterceptor returns a new interceptor.
 func NewInterceptor(opt *Option) IInterceptor {
 	i := &Interceptor{
 		logPayload: viper.GetBool("log.payload"),
-		redis:      opt.Redis,
 		casbin:     opt.Casbin,
+		redis:      opt.Redis,
 	}
 
 	return i
