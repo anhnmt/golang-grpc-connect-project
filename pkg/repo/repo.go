@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/xdorro/golang-grpc-base-project/internal/model"
+	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
 var _ IRepo = (*Repo)(nil)
@@ -20,7 +20,7 @@ type IRepo interface {
 	Client() *mongo.Client
 	Close() error
 	Collection(name string) *mongo.Collection
-	CollectionModel(model model.IBaseModel) *mongo.Collection
+	CollectionModel(model utils.IBaseModel) *mongo.Collection
 }
 
 // Repo is a repository struct.
@@ -89,7 +89,7 @@ func (r *Repo) Collection(name string) *mongo.Collection {
 }
 
 // CollectionModel returns the mongo collection models by Name.
-func (r *Repo) CollectionModel(model model.IBaseModel) *mongo.Collection {
+func (r *Repo) CollectionModel(model utils.IBaseModel) *mongo.Collection {
 	return r.Collection(model.CollectionName())
 }
 
