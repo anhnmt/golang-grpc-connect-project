@@ -36,9 +36,14 @@ func initServer() server.IServer {
 	}
 	iCasbin := casbin.NewCasbin(option)
 	iRedis := redis.NewRedis()
+	permissionrepoOption := &permissionrepo.Option{
+		Repo: iRepo,
+	}
+	permissionrepoIRepo := permissionrepo.NewRepo(permissionrepoOption)
 	interceptorOption := &interceptor.Option{
-		Casbin: iCasbin,
-		Redis:  iRedis,
+		Casbin:         iCasbin,
+		Redis:          iRedis,
+		PermissionRepo: permissionrepoIRepo,
 	}
 	iInterceptor := interceptor.NewInterceptor(interceptorOption)
 	userrepoOption := &userrepo.Option{
@@ -61,10 +66,6 @@ func initServer() server.IServer {
 		AuthBiz: iAuthBiz,
 	}
 	iAuthService := authservice.NewService(authserviceOption)
-	permissionrepoOption := &permissionrepo.Option{
-		Repo: iRepo,
-	}
-	permissionrepoIRepo := permissionrepo.NewRepo(permissionrepoOption)
 	permissionbizOption := &permissionbiz.Option{
 		PermissionRepo: permissionrepoIRepo,
 	}
