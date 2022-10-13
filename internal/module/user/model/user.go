@@ -6,15 +6,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/xdorro/golang-grpc-base-project/internal/model"
-	"github.com/xdorro/golang-grpc-base-project/utils"
+	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
 var _ IUser = &User{}
 
 // IUser is the interface for a user
 type IUser interface {
-	model.IBaseModel
+	utils.IBaseModel
 
 	HashPassword() error
 	ComparePassword(password string) bool
@@ -22,7 +21,7 @@ type IUser interface {
 
 // User is a user struct.
 type User struct {
-	model.BaseModel `bson:",inline"`
+	utils.BaseModel `bson:",inline"`
 
 	Name     string `json:"name,omitempty" bson:"name,omitempty"`
 	Email    string `json:"email,omitempty" bson:"email,omitempty"`
@@ -76,7 +75,7 @@ func (m *User) ComparePassword(password string) bool {
 // UserToProto converts a user to a proto
 func UserToProto(m *User) *userv1.User {
 	return &userv1.User{
-		Id:    m.ID.Hex(),
+		Id:    m.ID,
 		Name:  m.Name,
 		Email: m.Email,
 		Role:  m.Role,

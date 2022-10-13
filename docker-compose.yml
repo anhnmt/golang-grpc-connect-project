@@ -1,0 +1,34 @@
+version: '3.8'
+
+#services describe the containers that will start
+services:
+  golang-grpc-base-project:
+    container_name: golang-grpc-base-project
+    image: ghcr.io/xdorro/golang-grpc-base-project:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    # Connects the API to a common base-project bridge
+    networks:
+      - base-project
+    # If the container goes down, it will restart
+    restart: "no"
+    volumes:
+      - ./logs:/root/logs
+    environment:
+      DB_URL: "mongodb://root:123456aA%40@mongodb:27017"
+      DB_NAME: "base"
+#    deploy:
+#      replicas: 1
+#      resources:
+#        limits:
+#          cpus: "1"
+#          memory: "100M"
+
+networks:
+#  default: # this network (app2)
+#    driver: bridge
+  base-project:
+    external: true

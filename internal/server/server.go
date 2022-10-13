@@ -2,9 +2,9 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"sync"
 	"time"
 
@@ -16,14 +16,14 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
-	"github.com/xdorro/golang-grpc-base-project/utils"
+	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
 var _ IServer = (*Server)(nil)
 
 // IServer Server interface.
 type IServer interface {
-	Run()
+	Run() error
 	Close() error
 }
 
@@ -52,10 +52,10 @@ type Option struct {
 // NewServer new server.
 func NewServer(opt *Option) IServer {
 	s := &Server{
-		appName:   viper.GetString("APP_NAME"),
-		appPort:   viper.GetInt("APP_PORT"),
-		pprofPort: viper.GetInt("PPROF_PORT"),
-		appDebug:  viper.GetBool("APP_DEBUG"),
+		appName:   viper.GetString("app.name"),
+		appDebug:  viper.GetBool("app.debug"),
+		appPort:   viper.GetInt("app.port"),
+		pprofPort: viper.GetInt("pprof.port"),
 		mux:       opt.Mux,
 		service:   opt.Service,
 	}
@@ -69,52 +69,53 @@ func NewServer(opt *Option) IServer {
 }
 
 // Run runs the server.
-func (s *Server) Run() {
-	appPort := fmt.Sprintf(":%d", s.appPort)
-	log.Info().Msgf("Starting application http://localhost%s", appPort)
-
-	// create new http server
-	s.setServer(&http.Server{
-		Addr: appPort,
-		// Use h2c, so we can serve HTTP/2 without TLS.
-		Handler: h2c.NewHandler(
-			s.customHandler(),
-			&http2.Server{},
-		),
-		ReadHeaderTimeout: time.Second,
-		ReadTimeout:       1 * time.Minute,
-		WriteTimeout:      1 * time.Minute,
-		MaxHeaderBytes:    8 * 1024, // 8KiB
-	})
+func (s *Server) Run() error {
+	// we're going to run the different protocol servers in parallel, so
+	// make an errgroup
+	group := new(errgroup.Group)
 
 	// we need a webserver to get the pprof webserver
 	if s.appDebug {
-		go func(s *Server) {
+		group.Go(func() error {
 			pprofPort := fmt.Sprintf(":%d", s.pprofPort)
 			log.Info().Msgf("Starting pprof http://localhost:%s", pprofPort)
 
-			err := http.ListenAndServe(pprofPort, nil)
-			if err != nil && !errors.Is(err, http.ErrServerClosed) {
-				log.Fatal().Err(err).Msg("Failed to run pprof server")
-			}
-		}(s)
+			return http.ListenAndServe(pprofPort, nil)
+		})
 	}
 
 	// Serve the http server on the http listener.
-	go func(s *Server) {
-		err := s.http.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal().Err(err).Msg("Failed to run http server")
-		}
-	}(s)
+	group.Go(func() error {
+		appPort := fmt.Sprintf(":%d", s.appPort)
+		log.Info().Msgf("Starting application http://localhost%s", appPort)
+
+		// create new http server
+		s.setServer(&http.Server{
+			Addr: appPort,
+			// Use h2c, so we can serve HTTP/2 without TLS.
+			Handler: h2c.NewHandler(
+				s.customHandler(),
+				&http2.Server{},
+			),
+			ReadHeaderTimeout: time.Second,
+			ReadTimeout:       1 * time.Minute,
+			WriteTimeout:      1 * time.Minute,
+			MaxHeaderBytes:    8 * 1024, // 8KiB
+		})
+
+		// run the server
+		return s.http.ListenAndServe()
+	})
+
+	return group.Wait()
 }
 
 // Close closes the server.
 func (s *Server) Close() error {
-	g, gCtx := errgroup.WithContext(context.Background())
+	group := new(errgroup.Group)
 
-	g.Go(func() error {
-		ctx, cancel := context.WithTimeout(gCtx, 10*time.Second)
+	group.Go(func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		if err := s.http.Shutdown(ctx); err != nil {
@@ -125,11 +126,11 @@ func (s *Server) Close() error {
 		return nil
 	})
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
+	group.Go(func() error {
+		return s.service.Close()
+	})
 
-	return nil
+	return group.Wait()
 }
 
 // Server adds a new server.

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"errors"
+	"flag"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -8,10 +11,19 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/xdorro/golang-grpc-base-project/config"
+	"github.com/xdorro/golang-grpc-base-project/internal/server"
+	"github.com/xdorro/golang-grpc-base-project/pkg/logger"
 )
 
 func init() {
-	config.NewConfig()
+	// -env is option for command line
+	env := flag.String("env", "local", "environment")
+	// -log_file is option for command line
+	logFile := flag.String("log_file", "logs/data.log", "log file path")
+	flag.Parse()
+
+	logger.NewLogger(*logFile)
+	config.NewConfig(*env)
 }
 
 func main() {
@@ -22,7 +34,12 @@ func main() {
 	srv := initServer()
 
 	// Run server
-	srv.Run()
+	go func(srv server.IServer) {
+		err := srv.Run()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal().Err(err).Msg("Failed to run http server")
+		}
+	}(srv)
 
 	<-exit
 	if err := srv.Close(); err != nil {

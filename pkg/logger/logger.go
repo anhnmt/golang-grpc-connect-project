@@ -1,4 +1,4 @@
-package config
+package logger
 
 import (
 	"io"
@@ -9,11 +9,10 @@ import (
 	"github.com/natefinch/lumberjack/v3"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
-// defaultLogger the default logger
-func defaultLogger() {
+// NewLogger the default logger
+func NewLogger(logFileUrl string) {
 	// UNIX Time is faster and smaller than most timestamps
 	consoleWriter := &zerolog.ConsoleWriter{
 		Out:        os.Stdout,
@@ -23,7 +22,7 @@ func defaultLogger() {
 
 	// Multi Writer
 	writer := []io.Writer{
-		getLogWriter(),
+		getLogWriter(logFileUrl),
 		consoleWriter,
 	}
 
@@ -49,7 +48,7 @@ func defaultLogger() {
 }
 
 // getLogWriter returns a lumberjack.logger
-func getLogWriter() *lumberjack.Roller {
+func getLogWriter(logFileUrl string) *lumberjack.Roller {
 	options := &lumberjack.Options{
 		MaxBackups: 5,  // Files
 		MaxAge:     30, // 30 days
@@ -57,7 +56,6 @@ func getLogWriter() *lumberjack.Roller {
 	}
 
 	// get log file path
-	logFileUrl := viper.GetString("LOG_FILE_URL")
 	if logFileUrl == "" {
 		logFileUrl = "logs/data.log"
 	}

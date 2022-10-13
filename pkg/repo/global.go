@@ -86,6 +86,22 @@ func InsertOne(collection *mongo.Collection, data any, opt ...*options.InsertOne
 	return res, nil
 }
 
+// InsertMany insert many
+func InsertMany(collection *mongo.Collection, data []any, opt ...*options.InsertManyOptions) (
+	*mongo.InsertManyResult, error,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	res, err := collection.InsertMany(ctx, data, opt...)
+	if err != nil {
+		log.Err(err).Msg("Error insert many")
+		return nil, err
+	}
+
+	return res, nil
+}
+
 // UpdateOne updates one
 func UpdateOne(collection *mongo.Collection, filter, data any, opt ...*options.UpdateOptions) (
 	*mongo.UpdateResult, error,
@@ -102,6 +118,22 @@ func UpdateOne(collection *mongo.Collection, filter, data any, opt ...*options.U
 	return res, nil
 }
 
+// UpdateMany updates many
+func UpdateMany(collection *mongo.Collection, filter, data any, opt ...*options.UpdateOptions) (
+	*mongo.UpdateResult, error,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	res, err := collection.UpdateMany(ctx, filter, data, opt...)
+	if err != nil {
+		log.Err(err).Msg("Error updating user")
+		return nil, err
+	}
+
+	return res, nil
+}
+
 // DeleteOne deletes one
 func DeleteOne(collection *mongo.Collection, filter any, opt ...*options.DeleteOptions) (
 	*mongo.DeleteResult, error,
@@ -110,6 +142,22 @@ func DeleteOne(collection *mongo.Collection, filter any, opt ...*options.DeleteO
 	defer cancel()
 
 	res, err := collection.DeleteOne(ctx, filter, opt...)
+	if err != nil {
+		log.Err(err).Msg("Error deleting user")
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// DeleteMany deletes many
+func DeleteMany(collection *mongo.Collection, filter any, opt ...*options.DeleteOptions) (
+	*mongo.DeleteResult, error,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	res, err := collection.DeleteMany(ctx, filter, opt...)
 	if err != nil {
 		log.Err(err).Msg("Error deleting user")
 		return nil, err

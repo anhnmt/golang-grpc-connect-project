@@ -1,4 +1,4 @@
-package pingbiz
+package rolebiz
 
 import (
 	"github.com/google/wire"

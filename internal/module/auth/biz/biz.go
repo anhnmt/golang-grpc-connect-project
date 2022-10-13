@@ -15,7 +15,7 @@ import (
 
 	usermodel "github.com/xdorro/golang-grpc-base-project/internal/module/user/model"
 	userrepo "github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
-	"github.com/xdorro/golang-grpc-base-project/utils"
+	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
 var _ IAuthBiz = &Biz{}
@@ -134,7 +134,7 @@ func (s *Biz) RefreshToken(req *connect.Request[authv1.TokenRequest]) (
 func (s *Biz) generateAuthToken(data *usermodel.User) (
 	*authv1.TokenResponse, error,
 ) {
-	uid := data.ID.Hex()
+	uid := data.ID
 	sessionID := uuid.NewString()
 	now := time.Now()
 	refreshExpire := now.Add(utils.RefreshExpire)

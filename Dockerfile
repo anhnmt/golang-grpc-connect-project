@@ -1,6 +1,6 @@
 # ./Dockerfile
 
-FROM golang:alpine as builder
+FROM golang:1.19-alpine as builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -15,7 +15,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go app
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main
 
 FROM alpine:latest
 

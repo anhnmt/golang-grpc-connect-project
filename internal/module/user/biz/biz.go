@@ -13,7 +13,7 @@ import (
 
 	usermodel "github.com/xdorro/golang-grpc-base-project/internal/module/user/model"
 	userrepo "github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
-	"github.com/xdorro/golang-grpc-base-project/utils"
+	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
 var _ IUserBiz = &Biz{}
@@ -153,9 +153,9 @@ func (s *Biz) CreateUser(req *connect.Request[userv1.CreateUserRequest]) (
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	resID := oid.InsertedID.(primitive.ObjectID)
+	resID := oid.InsertedID.(string)
 	res := &userv1.CommonResponse{
-		Data: resID.Hex(),
+		Data: resID,
 	}
 	return connect.NewResponse(res), nil
 }

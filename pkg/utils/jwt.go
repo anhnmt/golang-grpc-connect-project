@@ -20,7 +20,7 @@ const (
 
 var (
 	// secretKey token secret key
-	secretKey = []byte(viper.GetString("APP_SECRET"))
+	secretKey = []byte(viper.GetString("app.secret"))
 )
 
 // EncryptToken encrypt token

@@ -1,4 +1,4 @@
-package pingservice
+package roleservice
 
 import (
 	"github.com/google/wire"
