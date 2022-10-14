@@ -19,7 +19,7 @@ type IBaseModel interface {
 
 // BaseModel is a base models struct.
 type BaseModel struct {
-	ID        string    `json:"id,omitempty" bson:"_id,omitempty"`
+	Id        string    `json:"_id,omitempty" bson:"_id,omitempty"`
 	CreatedAt time.Time `json:"-" bson:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"-" bson:"updated_at,omitempty"`
 	DeletedAt time.Time `json:"-" bson:"deleted_at,omitempty"`
@@ -32,7 +32,7 @@ func (m *BaseModel) CollectionName() string {
 
 // PreCreate is a callback that gets called before creating a models.
 func (m *BaseModel) PreCreate() {
-	m.ID = primitive.NewObjectID().Hex()
+	m.Id = primitive.NewObjectID().Hex()
 	m.CreatedAt = time.Now()
 	m.UpdatedAt = time.Now()
 }

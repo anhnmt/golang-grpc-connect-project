@@ -11,12 +11,13 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	permissionmodel "github.com/xdorro/golang-grpc-base-project/internal/module/permission/model"
-	permissionrepo "github.com/xdorro/golang-grpc-base-project/internal/module/permission/repo"
 	"github.com/xdorro/golang-grpc-base-project/pkg/casbin"
 	"github.com/xdorro/golang-grpc-base-project/pkg/redis"
+	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 	"github.com/xdorro/golang-grpc-base-project/pkg/utils/constants"
 )
@@ -30,9 +31,9 @@ type IInterceptor interface {
 
 // Option is an interceptor option struct.
 type Option struct {
-	Casbin         casbin.ICasbin
-	Redis          redis.IRedis
-	PermissionRepo permissionrepo.IRepo
+	Casbin casbin.ICasbin
+	Redis  redis.IRedis
+	Repo   repo.IRepo
 }
 
 // Interceptor is an interceptor struct.
@@ -40,18 +41,18 @@ type Interceptor struct {
 	logPayload bool
 
 	// options
-	casbin         casbin.ICasbin
-	redis          redis.IRedis
-	permissionRepo permissionrepo.IRepo
+	casbin               casbin.ICasbin
+	redis                redis.IRedis
+	permissionCollection *mongo.Collection
 }
 
 // NewInterceptor returns a new interceptor.
 func NewInterceptor(opt *Option) IInterceptor {
 	i := &Interceptor{
-		logPayload:     viper.GetBool("log.payload"),
-		casbin:         opt.Casbin,
-		redis:          opt.Redis,
-		permissionRepo: opt.PermissionRepo,
+		logPayload:           viper.GetBool("log.payload"),
+		casbin:               opt.Casbin,
+		redis:                opt.Redis,
+		permissionCollection: opt.Repo.CollectionModel(&permissionmodel.Permission{}),
 	}
 
 	return i
@@ -143,7 +144,7 @@ func (i *Interceptor) getListPermissions() map[string]*permissionmodel.Permissio
 		Find().
 		SetSort(bson.M{"created_at": -1})
 
-	data, err := i.permissionRepo.Find(filter, opt)
+	data, err := repo.Find[permissionmodel.Permission](i.permissionCollection, filter, opt)
 	if err != nil {
 		return permissions
 	}

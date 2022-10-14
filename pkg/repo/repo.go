@@ -19,6 +19,7 @@ var _ IRepo = (*Repo)(nil)
 type IRepo interface {
 	Client() *mongo.Client
 	Close() error
+	Database() *mongo.Database
 	Collection(name string) *mongo.Collection
 	CollectionModel(model utils.IBaseModel) *mongo.Collection
 }
@@ -83,9 +84,14 @@ func (r *Repo) Close() error {
 	return nil
 }
 
+// Database returns the mongo database by Name.
+func (r *Repo) Database() *mongo.Database {
+	return r.client.Database(r.dbName)
+}
+
 // Collection returns the mongo collection by Name.
 func (r *Repo) Collection(name string) *mongo.Collection {
-	return r.client.Database(r.dbName).Collection(name)
+	return r.Database().Collection(name)
 }
 
 // CollectionModel returns the mongo collection models by Name.
