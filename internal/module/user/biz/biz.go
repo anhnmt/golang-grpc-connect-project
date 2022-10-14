@@ -9,10 +9,11 @@ import (
 	userv1 "github.com/xdorro/proto-base-project/proto-gen-go/user/v1"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	usermodel "github.com/xdorro/golang-grpc-base-project/internal/module/user/model"
-	userrepo "github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
+	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
@@ -32,18 +33,18 @@ type IUserBiz interface {
 // Biz struct.
 type Biz struct {
 	// option
-	userRepo userrepo.IRepo
+	userCollection *mongo.Collection
 }
 
 // Option service option.
 type Option struct {
-	UserRepo userrepo.IRepo
+	Repo repo.IRepo
 }
 
 // NewBiz new service.
 func NewBiz(opt *Option) IUserBiz {
 	s := &Biz{
-		userRepo: opt.UserRepo,
+		userCollection: opt.Repo.CollectionModel(&usermodel.User{}),
 	}
 
 	return s
@@ -59,7 +60,7 @@ func (s *Biz) FindAllUsers(req *connect.Request[userv1.FindAllUsersRequest]) (
 			"$exists": false,
 		},
 	}
-	count, _ := s.userRepo.CountDocuments(filter)
+	count, _ := repo.CountDocuments(s.userCollection, filter)
 	limit := int64(10)
 	totalPages := utils.TotalPage(count, limit)
 	page := utils.CurrentPage(req.Msg.GetPage(), totalPages)
@@ -71,7 +72,8 @@ func (s *Biz) FindAllUsers(req *connect.Request[userv1.FindAllUsersRequest]) (
 		SetProjection(bson.M{"password": 0}).
 		SetLimit(limit).
 		SetSkip((page - 1) * limit)
-	data, err := s.userRepo.Find(filter, opt)
+
+	data, err := repo.Find[usermodel.User](s.userCollection, filter, opt)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -107,7 +109,7 @@ func (s *Biz) FindUserByID(req *connect.Request[userv1.CommonUUIDRequest]) (
 		},
 	}
 
-	data, err := s.userRepo.FindOne(filter, opt)
+	data, err := repo.FindOne[usermodel.User](s.userCollection, filter, opt)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -121,7 +123,7 @@ func (s *Biz) CreateUser(req *connect.Request[userv1.CreateUserRequest]) (
 	*connect.Response[userv1.CommonResponse], error,
 ) {
 	// count all users with filter
-	count, _ := s.userRepo.CountDocuments(bson.M{
+	count, _ := repo.CountDocuments(s.userCollection, bson.M{
 		"email": req.Msg.GetEmail(),
 	})
 	if count > 0 {
@@ -147,16 +149,23 @@ func (s *Biz) CreateUser(req *connect.Request[userv1.CreateUserRequest]) (
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	oid, err := s.userRepo.InsertOne(data)
+	result, err := repo.InsertOne(s.userCollection, data)
 	if err != nil {
 		log.Err(err).Msg("Error create user")
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	resID := oid.InsertedID.(string)
 	res := &userv1.CommonResponse{
-		Data: resID,
+		Data: "success",
 	}
+
+	switch v := result.InsertedID.(type) {
+	case primitive.ObjectID:
+		res.Data = v.Hex()
+	case string:
+		res.Data = v
+	}
+
 	return connect.NewResponse(res), nil
 }
 
@@ -175,13 +184,14 @@ func (s *Biz) UpdateUser(req *connect.Request[userv1.UpdateUserRequest]) (
 			"$exists": false,
 		},
 	}
-	data, err := s.userRepo.FindOne(filter)
+
+	data, err := repo.FindOne[usermodel.User](s.userCollection, filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	// count all users with filter
-	count, _ := s.userRepo.CountDocuments(bson.M{
+	count, _ := repo.CountDocuments(s.userCollection, bson.M{
 		"_id":   bson.M{"$ne": id},
 		"email": req.Msg.GetEmail(),
 	})
@@ -195,7 +205,7 @@ func (s *Biz) UpdateUser(req *connect.Request[userv1.UpdateUserRequest]) (
 	data.PreUpdate()
 
 	obj := bson.M{"$set": data}
-	if _, err = s.userRepo.UpdateOne(filter, obj); err != nil {
+	if _, err = repo.UpdateOne(s.userCollection, filter, obj); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
@@ -220,13 +230,14 @@ func (s *Biz) DeleteUser(req *connect.Request[userv1.CommonUUIDRequest]) (
 			"$exists": false,
 		},
 	}
+
 	// count all users with filter
-	count, _ := s.userRepo.CountDocuments(filter)
+	count, _ := repo.CountDocuments(s.userCollection, filter)
 	if count <= 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("user does not exists"))
 	}
 
-	if _, err = s.userRepo.SoftDeleteOne(filter); err != nil {
+	if _, err = repo.SoftDeleteOne(s.userCollection, filter); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 

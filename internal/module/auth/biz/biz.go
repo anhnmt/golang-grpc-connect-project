@@ -11,10 +11,11 @@ import (
 	authv1 "github.com/xdorro/proto-base-project/proto-gen-go/auth/v1"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/sync/errgroup"
 
 	usermodel "github.com/xdorro/golang-grpc-base-project/internal/module/user/model"
-	userrepo "github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
+	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
@@ -30,18 +31,18 @@ type IAuthBiz interface {
 // Biz struct.
 type Biz struct {
 	// option
-	userRepo userrepo.IRepo
+	userCollection *mongo.Collection
 }
 
 // Option service option.
 type Option struct {
-	UserRepo userrepo.IRepo
+	Repo repo.IRepo
 }
 
 // NewBiz new service.
 func NewBiz(opt *Option) IAuthBiz {
 	s := &Biz{
-		userRepo: opt.UserRepo,
+		userCollection: opt.Repo.CollectionModel(&usermodel.User{}),
 	}
 
 	return s
@@ -56,7 +57,7 @@ func (s *Biz) Login(req *connect.Request[authv1.LoginRequest]) (
 			"$exists": false,
 		},
 	}
-	data, err := s.userRepo.FindOne(filter)
+	data, err := repo.FindOne[usermodel.User](s.userCollection, filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -116,7 +117,7 @@ func (s *Biz) RefreshToken(req *connect.Request[authv1.TokenRequest]) (
 			"$exists": false,
 		},
 	}
-	data, err := s.userRepo.FindOne(filter)
+	data, err := repo.FindOne[usermodel.User](s.userCollection, filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -134,7 +135,7 @@ func (s *Biz) RefreshToken(req *connect.Request[authv1.TokenRequest]) (
 func (s *Biz) generateAuthToken(data *usermodel.User) (
 	*authv1.TokenResponse, error,
 ) {
-	uid := data.ID
+	uid := data.Id
 	sessionID := uuid.NewString()
 	now := time.Now()
 	refreshExpire := now.Add(utils.RefreshExpire)

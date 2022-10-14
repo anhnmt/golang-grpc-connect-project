@@ -8,10 +8,11 @@ import (
 	permissionv1 "github.com/xdorro/proto-base-project/proto-gen-go/permission/v1"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	permissionmodel "github.com/xdorro/golang-grpc-base-project/internal/module/permission/model"
-	permissionrepo "github.com/xdorro/golang-grpc-base-project/internal/module/permission/repo"
+	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
@@ -39,18 +40,18 @@ type IPermissionBiz interface {
 // Biz struct.
 type Biz struct {
 	// option
-	permissionRepo permissionrepo.IRepo
+	permissionCollection *mongo.Collection
 }
 
 // Option service option.
 type Option struct {
-	PermissionRepo permissionrepo.IRepo
+	Repo repo.IRepo
 }
 
 // NewBiz new service.
 func NewBiz(opt *Option) IPermissionBiz {
 	s := &Biz{
-		permissionRepo: opt.PermissionRepo,
+		permissionCollection: opt.Repo.CollectionModel(&permissionmodel.Permission{}),
 	}
 
 	return s
@@ -66,7 +67,7 @@ func (s *Biz) FindAllPermissions(req *connect.Request[permissionv1.FindAllPermis
 			"$exists": false,
 		},
 	}
-	count, _ := s.permissionRepo.CountDocuments(filter)
+	count, _ := repo.CountDocuments(s.permissionCollection, filter)
 	limit := int64(10)
 	totalPages := utils.TotalPage(count, limit)
 	page := utils.CurrentPage(req.Msg.GetPage(), totalPages)
@@ -77,7 +78,7 @@ func (s *Biz) FindAllPermissions(req *connect.Request[permissionv1.FindAllPermis
 		SetSort(bson.M{"created_at": -1}).
 		SetLimit(limit).
 		SetSkip((page - 1) * limit)
-	data, err := s.permissionRepo.Find(filter, opt)
+	data, err := repo.Find[permissionmodel.Permission](s.permissionCollection, filter, opt)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -112,7 +113,7 @@ func (s *Biz) FindPermissionByID(req *connect.Request[permissionv1.CommonUUIDReq
 		},
 	}
 
-	data, err := s.permissionRepo.FindOne(filter, opt)
+	data, err := repo.FindOne[permissionmodel.Permission](s.permissionCollection, filter, opt)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -132,7 +133,7 @@ func (s *Biz) CreatePermission(req *connect.Request[permissionv1.CreatePermissio
 			"$exists": false,
 		},
 	}
-	count, _ := s.permissionRepo.CountDocuments(countFilter)
+	count, _ := repo.CountDocuments(s.permissionCollection, countFilter)
 	if count > 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("slug already exists"))
 	}
@@ -145,7 +146,7 @@ func (s *Biz) CreatePermission(req *connect.Request[permissionv1.CreatePermissio
 	}
 	data.PreCreate()
 
-	oid, err := s.permissionRepo.InsertOne(data)
+	oid, err := repo.InsertOne(s.permissionCollection, data)
 	if err != nil {
 		log.Err(err).Msg("Error create permission")
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -180,7 +181,7 @@ func (s *Biz) UpdatePermission(req *connect.Request[permissionv1.UpdatePermissio
 			"$exists": false,
 		},
 	}
-	data, err := s.permissionRepo.FindOne(filter)
+	data, err := repo.FindOne[permissionmodel.Permission](s.permissionCollection, filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -193,7 +194,7 @@ func (s *Biz) UpdatePermission(req *connect.Request[permissionv1.UpdatePermissio
 			"$exists": false,
 		},
 	}
-	count, _ := s.permissionRepo.CountDocuments(countFilter)
+	count, _ := repo.CountDocuments(s.permissionCollection, countFilter)
 	if count > 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("slug already exists"))
 	}
@@ -212,7 +213,7 @@ func (s *Biz) UpdatePermission(req *connect.Request[permissionv1.UpdatePermissio
 	data.PreUpdate()
 
 	opt := bson.M{"$set": data}
-	if _, err = s.permissionRepo.UpdateOne(filter, opt); err != nil {
+	if _, err = repo.UpdateOne(s.permissionCollection, filter, opt); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
@@ -245,12 +246,12 @@ func (s *Biz) DeletePermission(req *connect.Request[permissionv1.CommonUUIDReque
 		},
 	}
 	// count all permissions with filter
-	count, _ := s.permissionRepo.CountDocuments(filter)
+	count, _ := repo.CountDocuments(s.permissionCollection, filter)
 	if count <= 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("permission does not exists"))
 	}
 
-	if _, err = s.permissionRepo.SoftDeleteOne(filter); err != nil {
+	if _, err = repo.SoftDeleteOne(s.permissionCollection, filter); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
