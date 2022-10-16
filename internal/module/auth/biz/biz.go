@@ -142,9 +142,8 @@ func (s *Biz) generateAuthToken(data *usermodel.User) (
 	accessExpire := now.Add(utils.AccessExpire)
 
 	result := &authv1.TokenResponse{
-		TokenType:     utils.TokenType,
-		RefreshExpire: refreshExpire.Unix(),
-		AccessExpire:  accessExpire.Unix(),
+		TokenType:   utils.TokenType,
+		TokenExpire: accessExpire.Unix(),
 	}
 
 	var eg errgroup.Group

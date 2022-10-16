@@ -18,7 +18,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/rs/zerolog v1.28.0
 	github.com/spf13/viper v1.13.0
-	github.com/xdorro/proto-base-project v1.0.1
+	github.com/xdorro/proto-base-project v1.0.2
 	go.mongodb.org/mongo-driver v1.10.3
 	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a
 	golang.org/x/net v0.0.0-20221014081412-f15817d10f9b
