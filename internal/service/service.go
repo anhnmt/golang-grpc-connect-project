@@ -20,6 +20,7 @@ import (
 	permissionservice "github.com/xdorro/golang-grpc-base-project/internal/module/permission/service"
 	roleservice "github.com/xdorro/golang-grpc-base-project/internal/module/role/service"
 	userservice "github.com/xdorro/golang-grpc-base-project/internal/module/user/service"
+	"github.com/xdorro/golang-grpc-base-project/pkg/redis"
 	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 )
 
@@ -35,6 +36,7 @@ type Option struct {
 	Mux         *http.ServeMux
 	Interceptor interceptor.IInterceptor
 	Repo        repo.IRepo
+	Redis       redis.IRedis
 
 	UserService       userservice.IUserService
 	AuthService       authservice.IAuthService
@@ -48,6 +50,7 @@ type Service struct {
 	mux         *http.ServeMux
 	interceptor interceptor.IInterceptor
 	repo        repo.IRepo
+	redis       redis.IRedis
 
 	mu       sync.Mutex
 	services []string
@@ -56,8 +59,9 @@ type Service struct {
 // NewService new service.
 func NewService(opt *Option) IService {
 	s := &Service{
-		mux:  opt.Mux,
-		repo: opt.Repo,
+		mux:   opt.Mux,
+		repo:  opt.Repo,
+		redis: opt.Redis,
 	}
 
 	// Add connect options
@@ -84,6 +88,10 @@ func (s *Service) Close() error {
 
 	group.Go(func() error {
 		return s.repo.Close()
+	})
+
+	group.Go(func() error {
+		return s.redis.Close()
 	})
 
 	return group.Wait()

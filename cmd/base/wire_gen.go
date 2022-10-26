@@ -76,6 +76,7 @@ func initServer() server.IServer {
 		Mux:               serveMux,
 		Interceptor:       iInterceptor,
 		Repo:              iRepo,
+		Redis:             iRedis,
 		UserService:       iUserService,
 		AuthService:       iAuthService,
 		PermissionService: iPermissionService,
