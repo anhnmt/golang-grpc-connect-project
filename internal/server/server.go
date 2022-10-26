@@ -1,22 +1,25 @@
 package server
 
 import (
-	"context"
+	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	_ "net/http/pprof"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
-	"github.com/xdorro/golang-grpc-base-project/pkg/utils"
 )
 
 var _ IServer = (*Server)(nil)
@@ -29,36 +32,39 @@ type IServer interface {
 
 // Server struct.
 type Server struct {
+	mu sync.Mutex
+
 	// config
-	appName   string
-	appPort   int
-	pprofPort int
-	appDebug  bool
+	appName    string
+	appPort    int
+	pprofPort  int
+	appDebug   bool
+	logPayload bool
 
 	// option
-	mux     *http.ServeMux
-	service service.IService
-
-	mu   sync.Mutex
-	http *http.Server
+	grpcServer *grpc.Server
+	httpServer *runtime.ServeMux
+	service    service.IService
 }
 
 // Option server.
 type Option struct {
-	Mux     *http.ServeMux
 	Service service.IService
 }
 
 // NewServer new server.
 func NewServer(opt *Option) IServer {
 	s := &Server{
-		appName:   viper.GetString("app.name"),
-		appDebug:  viper.GetBool("app.debug"),
-		appPort:   viper.GetInt("app.port"),
-		pprofPort: viper.GetInt("pprof.port"),
-		mux:       opt.Mux,
-		service:   opt.Service,
+		appName:    viper.GetString("app.name"),
+		appDebug:   viper.GetBool("app.debug"),
+		appPort:    viper.GetInt("app.port"),
+		pprofPort:  viper.GetInt("pprof.port"),
+		logPayload: viper.GetBool("log.payload"),
+		service:    opt.Service,
 	}
+
+	s.NewGrpcServer()
+	s.NewHttpServer()
 
 	log.Info().
 		Str("app-name", s.appName).
@@ -90,21 +96,18 @@ func (s *Server) Run() error {
 		log.Info().Msgf("Starting application http://localhost%s", appPort)
 
 		// create new http server
-		s.setServer(&http.Server{
+		srv := &http.Server{
 			Addr: appPort,
 			// Use h2c, so we can serve HTTP/2 without TLS.
-			Handler: h2c.NewHandler(
-				s.customHandler(),
-				&http2.Server{},
-			),
+			Handler:           s.grpcHandlerFunc(),
 			ReadHeaderTimeout: time.Second,
 			ReadTimeout:       1 * time.Minute,
 			WriteTimeout:      1 * time.Minute,
 			MaxHeaderBytes:    8 * 1024, // 8KiB
-		})
+		}
 
 		// run the server
-		return s.http.ListenAndServe()
+		return srv.ListenAndServe()
 	})
 
 	return group.Wait()
@@ -112,39 +115,75 @@ func (s *Server) Run() error {
 
 // Close closes the server.
 func (s *Server) Close() error {
-	group := new(errgroup.Group)
+	s.grpcServer.GracefulStop()
 
-	group.Go(func() error {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
+	return nil
+}
 
-		if err := s.http.Shutdown(ctx); err != nil {
-			log.Err(err).Msg("Failed to shutdown http server")
-			return err
+func (s *Server) grpcHandlerFunc() http.Handler {
+	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+			s.grpcServer.ServeHTTP(w, r)
+			return
 		}
 
-		return nil
-	})
+		if !s.logPayload {
+			s.httpServer.ServeHTTP(w, r)
+			return
+		}
 
-	group.Go(func() error {
-		return s.service.Close()
-	})
-
-	return group.Wait()
+		s.logPayloadHandler(w, r)
+	}), &http2.Server{})
 }
 
-// Server adds a new server.
-func (s *Server) setServer(http *http.Server) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.http = http
+// logPayloadHandler is a log payload handler.
+func (s *Server) logPayloadHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error reading body: %v", err)
+		http.Error(w, "can't read body", http.StatusBadRequest)
+		return
+	}
+
+	// Work / inspect body. You may even modify it!
+
+	// And now set a new body, which will simulate the same data we read:
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
+
+	// Create a response wrapper:
+	mrw := &MyResponseWriter{
+		ResponseWriter: w,
+		buf:            &bytes.Buffer{},
+	}
+
+	logger := log.Info().
+		Interface("header", r.Header.Clone())
+
+	if len(body) > 0 {
+		logger.RawJSON("body", body)
+	}
+
+	s.httpServer.ServeHTTP(mrw, r)
+
+	logger.
+		RawJSON("response", mrw.buf.Bytes())
+
+	// Now inspect response, and finally send it out:
+	// (You can also modify it before sending it out!)
+	if _, err = io.Copy(w, mrw.buf); err != nil {
+		log.Printf("Failed to send out response: %v", err)
+	}
+
+	logger.
+		Msg("Log payload interceptor")
+	return
 }
 
-// customHandler adds custom handlers to the server.
-func (s *Server) customHandler() http.Handler {
-	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		utils.ResponseWithJson(w, http.StatusOK, "Hello, World!")
-	})
+type MyResponseWriter struct {
+	http.ResponseWriter
+	buf *bytes.Buffer
+}
 
-	return newCORS().Handler(s.mux)
+func (mrw *MyResponseWriter) Write(p []byte) (int, error) {
+	return mrw.buf.Write(p)
 }

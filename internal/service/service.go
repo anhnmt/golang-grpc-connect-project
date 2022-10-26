@@ -1,24 +1,15 @@
 package service
 
 import (
-	"net/http"
-	"strings"
+	"context"
 	"sync"
 
-	"github.com/bufbuild/connect-go"
-	grpchealth "github.com/bufbuild/connect-grpchealth-go"
-	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/zerolog/log"
-	"github.com/xdorro/proto-base-project/proto-gen-go/auth/v1/authv1connect"
-	"github.com/xdorro/proto-base-project/proto-gen-go/permission/v1/permissionv1connect"
-	"github.com/xdorro/proto-base-project/proto-gen-go/role/v1/rolev1connect"
-	"github.com/xdorro/proto-base-project/proto-gen-go/user/v1/userv1connect"
+	userv1 "github.com/xdorro/proto-base-project/proto-gen-go/user/v1"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 
-	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
-	authservice "github.com/xdorro/golang-grpc-base-project/internal/module/auth/service"
-	permissionservice "github.com/xdorro/golang-grpc-base-project/internal/module/permission/service"
-	roleservice "github.com/xdorro/golang-grpc-base-project/internal/module/role/service"
 	userservice "github.com/xdorro/golang-grpc-base-project/internal/module/user/service"
 	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
 )
@@ -28,26 +19,25 @@ var _ IService = &Service{}
 // IService service interface.
 type IService interface {
 	Close() error
+	RegisterGrpcServerHandler(grpcServer *grpc.Server)
+	RegisterHttpServerHandler(httpServer *runtime.ServeMux)
 }
 
 // Option service option.
 type Option struct {
-	Mux         *http.ServeMux
-	Interceptor interceptor.IInterceptor
-	Repo        repo.IRepo
+	// Interceptor interceptor.IInterceptor
+	Repo repo.IRepo
 
-	UserService       userservice.IUserService
-	AuthService       authservice.IAuthService
-	PermissionService permissionservice.IPermissionService
-	RoleService       roleservice.IRoleService
+	UserService userservice.IUserService
 }
 
 // Service struct.
 type Service struct {
 	// options
-	mux         *http.ServeMux
-	interceptor interceptor.IInterceptor
-	repo        repo.IRepo
+	userService userservice.IUserService
+
+	// interceptor interceptor.IInterceptor
+	repo repo.IRepo
 
 	mu       sync.Mutex
 	services []string
@@ -56,24 +46,9 @@ type Service struct {
 // NewService new service.
 func NewService(opt *Option) IService {
 	s := &Service{
-		mux:  opt.Mux,
-		repo: opt.Repo,
+		repo:        opt.Repo,
+		userService: opt.UserService,
 	}
-
-	// Add connect options
-	connectOption := connect.WithOptions(
-		connect.WithCompressMinBytes(1024),
-		connect.WithInterceptors(opt.Interceptor.UnaryInterceptor()),
-	)
-
-	// Add your handlers here
-	s.addHandler(userv1connect.NewUserServiceHandler(opt.UserService, connectOption))
-	s.addHandler(authv1connect.NewAuthServiceHandler(opt.AuthService, connectOption))
-	s.addHandler(permissionv1connect.NewPermissionServiceHandler(opt.PermissionService, connectOption))
-	s.addHandler(rolev1connect.NewRoleServiceHandler(opt.RoleService, connectOption))
-
-	// Add service handlers
-	s.serviceHandler(connectOption)
 
 	return s
 }
@@ -89,30 +64,15 @@ func (s *Service) Close() error {
 	return group.Wait()
 }
 
-// serviceHandler add the service handler.
-func (s *Service) serviceHandler(opts connect.Option) {
-	// Health check
-	checker := grpchealth.NewStaticChecker(s.services...)
-	s.addHandler(grpchealth.NewHandler(checker, opts))
-
-	// Reflect serviceHandler
-	reflector := grpcreflect.NewStaticReflector(s.services...)
-	s.addHandler(grpcreflect.NewHandlerV1(reflector, opts))
-	// Many tools still expect the older version of the server reflection API, so
-	// most servers should mount both handlers.
-	s.addHandler(grpcreflect.NewHandlerV1Alpha(reflector, opts))
+// RegisterGrpcServerHandler adds a serviceHandler.
+func (s *Service) RegisterGrpcServerHandler(grpcServer *grpc.Server) {
+	userv1.RegisterUserServiceServer(grpcServer, s.userService)
 }
 
-// addHandler adds a serviceHandler.
-func (s *Service) addHandler(str string, handler http.Handler) {
-	s.mu.Lock()
-	// add service name to list of services
-	svcName := strings.TrimSpace(strings.ReplaceAll(str, "/", ""))
-	s.services = append(s.services, svcName)
-	s.mu.Unlock()
-
-	// add serviceHandler
-	s.mux.Handle(str, handler)
-
-	log.Info().Msgf("Added serviceHandler for %s", svcName)
+// RegisterHttpServerHandler adds a serviceHandler.
+func (s *Service) RegisterHttpServerHandler(httpServer *runtime.ServeMux) {
+	ctx := context.Background()
+	if err := userv1.RegisterUserServiceHandlerServer(ctx, httpServer, s.userService); err != nil {
+		log.Panic().Err(err).Msg("RegisterUserServiceHandler failed")
+	}
 }

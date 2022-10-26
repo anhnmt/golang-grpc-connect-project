@@ -46,7 +46,7 @@ func NewRepo() IRepo {
 		Msg("Connecting to MongoDB")
 
 	// Set connect timeout to 15 seconds
-	ctxConn, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctxConn, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	clientOpts := options.Client().

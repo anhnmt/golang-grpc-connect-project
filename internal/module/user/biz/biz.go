@@ -21,13 +21,13 @@ var _ IUserBiz = &Biz{}
 
 // IUserBiz user service interface.
 type IUserBiz interface {
-	FindAllUsers(req *connect.Request[userv1.FindAllUsersRequest]) (
-		*connect.Response[userv1.FindAllUsersResponse], error,
+	FindAllUsers(req *userv1.FindAllUsersRequest) (
+		*userv1.FindAllUsersResponse, error,
 	)
-	FindUserByID(req *connect.Request[userv1.CommonUUIDRequest]) (*connect.Response[userv1.User], error)
-	CreateUser(req *connect.Request[userv1.CreateUserRequest]) (*connect.Response[userv1.CommonResponse], error)
-	UpdateUser(req *connect.Request[userv1.UpdateUserRequest]) (*connect.Response[userv1.CommonResponse], error)
-	DeleteUser(req *connect.Request[userv1.CommonUUIDRequest]) (*connect.Response[userv1.CommonResponse], error)
+	FindUserByID(req *userv1.CommonUUIDRequest) (*userv1.User, error)
+	CreateUser(req *userv1.CreateUserRequest) (*userv1.CommonResponse, error)
+	UpdateUser(req *userv1.UpdateUserRequest) (*userv1.CommonResponse, error)
+	DeleteUser(req *userv1.CommonUUIDRequest) (*userv1.CommonResponse, error)
 }
 
 // Biz struct.
@@ -51,8 +51,8 @@ func NewBiz(opt *Option) IUserBiz {
 }
 
 // FindAllUsers is the user.v1.UserBiz.FindAllUsers method.
-func (s *Biz) FindAllUsers(req *connect.Request[userv1.FindAllUsersRequest]) (
-	*connect.Response[userv1.FindAllUsersResponse], error,
+func (s *Biz) FindAllUsers(req *userv1.FindAllUsersRequest) (
+	*userv1.FindAllUsersResponse, error,
 ) {
 	// count all users with filter
 	filter := bson.M{
@@ -63,7 +63,7 @@ func (s *Biz) FindAllUsers(req *connect.Request[userv1.FindAllUsersRequest]) (
 	count, _ := repo.CountDocuments(s.userCollection, filter)
 	limit := int64(10)
 	totalPages := utils.TotalPage(count, limit)
-	page := utils.CurrentPage(req.Msg.GetPage(), totalPages)
+	page := utils.CurrentPage(req.GetPage(), totalPages)
 
 	// find all genres with filter and option
 	opt := options.
@@ -84,14 +84,14 @@ func (s *Biz) FindAllUsers(req *connect.Request[userv1.FindAllUsersRequest]) (
 		Data:        usermodel.UsersToProto(data),
 	}
 
-	return connect.NewResponse(res), nil
+	return res, nil
 }
 
 // FindUserByID is the user.v1.UserBiz.FindUserByID method.
-func (s *Biz) FindUserByID(req *connect.Request[userv1.CommonUUIDRequest]) (
-	*connect.Response[userv1.User], error,
+func (s *Biz) FindUserByID(req *userv1.CommonUUIDRequest) (
+	*userv1.User, error,
 ) {
-	id, err := primitive.ObjectIDFromHex(req.Msg.GetId())
+	id, err := primitive.ObjectIDFromHex(req.GetId())
 	if err != nil {
 		log.Err(err).Msg("Failed find user by id")
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -115,30 +115,30 @@ func (s *Biz) FindUserByID(req *connect.Request[userv1.CommonUUIDRequest]) (
 	}
 
 	res := usermodel.UserToProto(data)
-	return connect.NewResponse(res), nil
+	return res, nil
 }
 
 // CreateUser is the user.v1.UserBiz.CreateUser method.
-func (s *Biz) CreateUser(req *connect.Request[userv1.CreateUserRequest]) (
-	*connect.Response[userv1.CommonResponse], error,
+func (s *Biz) CreateUser(req *userv1.CreateUserRequest) (
+	*userv1.CommonResponse, error,
 ) {
 	// count all users with filter
 	count, _ := repo.CountDocuments(s.userCollection, bson.M{
-		"email": req.Msg.GetEmail(),
+		"email": req.GetEmail(),
 	})
 	if count > 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("email already exists"))
 	}
 
-	role := req.Msg.GetRole()
+	role := req.GetRole()
 	if role == "" {
 		role = "user"
 	}
 
 	data := &usermodel.User{
-		Name:     req.Msg.GetName(),
-		Email:    req.Msg.GetEmail(),
-		Password: req.Msg.GetPassword(),
+		Name:     req.GetName(),
+		Email:    req.GetEmail(),
+		Password: req.GetPassword(),
 		Role:     strings.ToLower(role),
 	}
 	data.PreCreate()
@@ -166,14 +166,14 @@ func (s *Biz) CreateUser(req *connect.Request[userv1.CreateUserRequest]) (
 		res.Data = v
 	}
 
-	return connect.NewResponse(res), nil
+	return res, nil
 }
 
 // UpdateUser is the user.v1.UserBiz.UpdateUser method.
-func (s *Biz) UpdateUser(req *connect.Request[userv1.UpdateUserRequest]) (
-	*connect.Response[userv1.CommonResponse], error,
+func (s *Biz) UpdateUser(req *userv1.UpdateUserRequest) (
+	*userv1.CommonResponse, error,
 ) {
-	id, err := primitive.ObjectIDFromHex(req.Msg.GetId())
+	id, err := primitive.ObjectIDFromHex(req.GetId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -193,15 +193,15 @@ func (s *Biz) UpdateUser(req *connect.Request[userv1.UpdateUserRequest]) (
 	// count all users with filter
 	count, _ := repo.CountDocuments(s.userCollection, bson.M{
 		"_id":   bson.M{"$ne": id},
-		"email": req.Msg.GetEmail(),
+		"email": req.GetEmail(),
 	})
 	if count > 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("email already exists"))
 	}
 
-	data.Name = utils.StringCompareOrPassValue(data.Name, req.Msg.GetName())
-	data.Email = utils.StringCompareOrPassValue(data.Email, req.Msg.GetEmail())
-	data.Role = utils.StringCompareOrPassValue(data.Role, strings.ToLower(req.Msg.GetRole()))
+	data.Name = utils.StringCompareOrPassValue(data.Name, req.GetName())
+	data.Email = utils.StringCompareOrPassValue(data.Email, req.GetEmail())
+	data.Role = utils.StringCompareOrPassValue(data.Role, strings.ToLower(req.GetRole()))
 	data.PreUpdate()
 
 	obj := bson.M{"$set": data}
@@ -210,16 +210,16 @@ func (s *Biz) UpdateUser(req *connect.Request[userv1.UpdateUserRequest]) (
 	}
 
 	res := &userv1.CommonResponse{
-		Data: req.Msg.GetId(),
+		Data: req.GetId(),
 	}
-	return connect.NewResponse(res), nil
+	return res, nil
 }
 
 // DeleteUser is the user.v1.UserBiz.DeleteUser method.
-func (s *Biz) DeleteUser(req *connect.Request[userv1.CommonUUIDRequest]) (
-	*connect.Response[userv1.CommonResponse], error,
+func (s *Biz) DeleteUser(req *userv1.CommonUUIDRequest) (
+	*userv1.CommonResponse, error,
 ) {
-	id, err := primitive.ObjectIDFromHex(req.Msg.GetId())
+	id, err := primitive.ObjectIDFromHex(req.GetId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -242,7 +242,7 @@ func (s *Biz) DeleteUser(req *connect.Request[userv1.CommonUUIDRequest]) (
 	}
 
 	res := &userv1.CommonResponse{
-		Data: req.Msg.GetId(),
+		Data: req.GetId(),
 	}
-	return connect.NewResponse(res), nil
+	return res, nil
 }
