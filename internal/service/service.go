@@ -1,7 +1,9 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -54,6 +56,7 @@ type Service struct {
 
 	mu       sync.Mutex
 	services []string
+	methods  []string
 }
 
 // NewService new service.
@@ -71,10 +74,25 @@ func NewService(opt *Option) IService {
 	)
 
 	// Add your handlers here
-	s.addHandler(userv1connect.NewUserServiceHandler(opt.UserService, connectOption))
-	s.addHandler(authv1connect.NewAuthServiceHandler(opt.AuthService, connectOption))
-	s.addHandler(permissionv1connect.NewPermissionServiceHandler(opt.PermissionService, connectOption))
-	s.addHandler(rolev1connect.NewRoleServiceHandler(opt.RoleService, connectOption))
+	s.addServiceHandler(userv1connect.UnimplementedUserServiceHandler{},
+		func() (string, http.Handler) {
+			return userv1connect.NewUserServiceHandler(opt.UserService, connectOption)
+		})
+
+	s.addServiceHandler(authv1connect.UnimplementedAuthServiceHandler{},
+		func() (string, http.Handler) {
+			return authv1connect.NewAuthServiceHandler(opt.AuthService, connectOption)
+		})
+
+	s.addServiceHandler(permissionv1connect.UnimplementedPermissionServiceHandler{},
+		func() (string, http.Handler) {
+			return permissionv1connect.NewPermissionServiceHandler(opt.PermissionService, connectOption)
+		})
+
+	s.addServiceHandler(rolev1connect.UnimplementedRoleServiceHandler{},
+		func() (string, http.Handler) {
+			return rolev1connect.NewRoleServiceHandler(opt.RoleService, connectOption)
+		})
 
 	// Add service handlers
 	s.serviceHandler(connectOption)
@@ -101,19 +119,36 @@ func (s *Service) Close() error {
 func (s *Service) serviceHandler(opts connect.Option) {
 	// Health check
 	checker := grpchealth.NewStaticChecker(s.services...)
-	s.addHandler(grpchealth.NewHandler(checker, opts))
+	s.mux.Handle(grpchealth.NewHandler(checker, opts))
 
 	// Reflect serviceHandler
 	reflector := grpcreflect.NewStaticReflector(s.services...)
-	s.addHandler(grpcreflect.NewHandlerV1(reflector, opts))
+	s.mux.Handle(grpcreflect.NewHandlerV1(reflector, opts))
 	// Many tools still expect the older version of the server reflection API, so
 	// most servers should mount both handlers.
-	s.addHandler(grpcreflect.NewHandlerV1Alpha(reflector, opts))
+	s.mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector, opts))
 }
 
-// addHandler adds a serviceHandler.
-func (s *Service) addHandler(str string, handler http.Handler) {
+// addServiceHandler adds a serviceHandler.
+func (s *Service) addServiceHandler(svcMethod any, fn func() (string, http.Handler)) {
+	str, handler := fn()
+
+	logger := log.Info()
+
 	s.mu.Lock()
+	if svcMethod != nil {
+		t := reflect.TypeOf(svcMethod)
+		methods := make([]string, 0, t.NumMethod())
+
+		for i := 0; i < t.NumMethod(); i++ {
+			methods = append(methods, fmt.Sprintf("%s%s", str, t.Method(i).Name))
+		}
+
+		s.methods = append(s.methods, methods...)
+
+		logger.Strs("methods", methods)
+	}
+
 	// add service name to list of services
 	svcName := strings.TrimSpace(strings.ReplaceAll(str, "/", ""))
 	s.services = append(s.services, svcName)
@@ -122,5 +157,5 @@ func (s *Service) addHandler(str string, handler http.Handler) {
 	// add serviceHandler
 	s.mux.Handle(str, handler)
 
-	log.Info().Msgf("Added serviceHandler for %s", svcName)
+	logger.Msgf("Added service handler for %s", svcName)
 }
