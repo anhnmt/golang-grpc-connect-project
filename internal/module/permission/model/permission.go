@@ -47,7 +47,7 @@ func (m *Permission) PreUpdate() {
 // PermissionToProto converts a user to a proto
 func PermissionToProto(m *Permission) *permissionv1.Permission {
 	return &permissionv1.Permission{
-		Id:          m.ID,
+		Id:          m.Id,
 		Name:        m.Name,
 		Slug:        m.Slug,
 		RequireAuth: m.RequireAuth,

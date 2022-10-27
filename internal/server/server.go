@@ -78,7 +78,7 @@ func (s *Server) Run() error {
 	if s.appDebug {
 		group.Go(func() error {
 			pprofPort := fmt.Sprintf(":%d", s.pprofPort)
-			log.Info().Msgf("Starting pprof http://localhost:%s", pprofPort)
+			log.Info().Msgf("Starting pprof http://localhost%s", pprofPort)
 
 			return http.ListenAndServe(pprofPort, nil)
 		})

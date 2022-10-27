@@ -26,8 +26,11 @@ using the Connect protocol:
 
 ```bash
 curl --header "Content-Type: application/json" \
-    --data '{}' \
-    localhost:8088/ping.v1.PingService/Ping
+    --data '{
+        "email": "admin@gmail.com",
+        "password": "123456"
+    }' \
+    localhost:5000/auth.v1.AuthService/Login
 ```
 
 To make the same RPC, but using [`grpcurl`][grpcurl] and the gRPC protocol:
@@ -35,7 +38,10 @@ To make the same RPC, but using [`grpcurl`][grpcurl] and the gRPC protocol:
 ```bash
 grpcurl \
     -plaintext \
-    -d '{}' \
-    localhost:8088 \
-    ping.v1.PingService/Ping
+    -d '{
+        "email": "admin@gmail.com",
+        "password": "123456"
+    }' \
+    localhost:5000 \
+    auth.v1.AuthService/Login
 ```

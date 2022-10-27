@@ -52,7 +52,7 @@ func NewBiz(opt *Option) IRoleBiz {
 }
 
 // FindAllRoles find all roles
-func (b *Biz) FindAllRoles(req *connect.Request[rolev1.FindAllRolesRequest]) (
+func (b *Biz) FindAllRoles(*connect.Request[rolev1.FindAllRolesRequest]) (
 	*connect.Response[rolev1.FindAllRolesResponse], error,
 ) {
 	data := make([]*rolev1.Role, 0)

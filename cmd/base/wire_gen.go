@@ -11,12 +11,10 @@ import (
 	"github.com/xdorro/golang-grpc-base-project/internal/module/auth/biz"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/auth/service"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/permission/biz"
-	"github.com/xdorro/golang-grpc-base-project/internal/module/permission/repo"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/permission/service"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/role/biz"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/role/service"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/user/biz"
-	"github.com/xdorro/golang-grpc-base-project/internal/module/user/repo"
 	"github.com/xdorro/golang-grpc-base-project/internal/module/user/service"
 	"github.com/xdorro/golang-grpc-base-project/internal/server"
 	"github.com/xdorro/golang-grpc-base-project/internal/service"
@@ -36,22 +34,14 @@ func initServer() server.IServer {
 	}
 	iCasbin := casbin.NewCasbin(option)
 	iRedis := redis.NewRedis()
-	permissionrepoOption := &permissionrepo.Option{
-		Repo: iRepo,
-	}
-	permissionrepoIRepo := permissionrepo.NewRepo(permissionrepoOption)
 	interceptorOption := &interceptor.Option{
-		Casbin:         iCasbin,
-		Redis:          iRedis,
-		PermissionRepo: permissionrepoIRepo,
+		Casbin: iCasbin,
+		Redis:  iRedis,
+		Repo:   iRepo,
 	}
 	iInterceptor := interceptor.NewInterceptor(interceptorOption)
-	userrepoOption := &userrepo.Option{
-		Repo: iRepo,
-	}
-	userrepoIRepo := userrepo.NewRepo(userrepoOption)
 	userbizOption := &userbiz.Option{
-		UserRepo: userrepoIRepo,
+		Repo: iRepo,
 	}
 	iUserBiz := userbiz.NewBiz(userbizOption)
 	userserviceOption := &userservice.Option{
@@ -59,7 +49,7 @@ func initServer() server.IServer {
 	}
 	iUserService := userservice.NewService(userserviceOption)
 	authbizOption := &authbiz.Option{
-		UserRepo: userrepoIRepo,
+		Repo: iRepo,
 	}
 	iAuthBiz := authbiz.NewBiz(authbizOption)
 	authserviceOption := &authservice.Option{
@@ -67,7 +57,7 @@ func initServer() server.IServer {
 	}
 	iAuthService := authservice.NewService(authserviceOption)
 	permissionbizOption := &permissionbiz.Option{
-		PermissionRepo: permissionrepoIRepo,
+		Repo: iRepo,
 	}
 	iPermissionBiz := permissionbiz.NewBiz(permissionbizOption)
 	permissionserviceOption := &permissionservice.Option{
@@ -86,6 +76,7 @@ func initServer() server.IServer {
 		Mux:               serveMux,
 		Interceptor:       iInterceptor,
 		Repo:              iRepo,
+		Redis:             iRedis,
 		UserService:       iUserService,
 		AuthService:       iAuthService,
 		PermissionService: iPermissionService,

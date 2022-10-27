@@ -18,16 +18,16 @@ const (
 	RefreshExpire = 1 * 24 * time.Hour // 1 day
 )
 
-var (
-	// secretKey token secret key
-	secretKey = []byte(viper.GetString("app.secret"))
-)
-
 // EncryptToken encrypt token
 func EncryptToken(claims *jwt.RegisteredClaims) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	signKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(viper.GetString("jwt.signKey")))
+	if err != nil {
+		log.Err(err).Msg("Error ParseRSAPrivateKeyFromPEM")
+		return "", err
+	}
 
-	tokenString, err := token.SignedString(secretKey)
+	token := jwt.NewWithClaims(jwt.SigningMethodRS512, claims)
+	tokenString, err := token.SignedString(signKey)
 	if err != nil {
 		log.Err(err).Msg("Error encrypt token")
 		return "", err
@@ -38,16 +38,21 @@ func EncryptToken(claims *jwt.RegisteredClaims) (string, error) {
 
 // DecryptToken decrypt token
 func DecryptToken(tokenString string) (*jwt.RegisteredClaims, error) {
+	verifyKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(viper.GetString("jwt.verifyKey")))
+	if err != nil {
+		log.Err(err).Msg("Error ParseRSAPublicKeyFromPEM")
+		return nil, err
+	}
+
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (
 		interface{}, error,
 	) {
 		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-		return secretKey, nil
+		return verifyKey, nil
 	})
 	if err != nil {
 		log.Err(err).Msg("Error decrypt token")
