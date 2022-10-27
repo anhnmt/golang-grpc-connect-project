@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -11,19 +12,24 @@ import (
 	grpchealth "github.com/bufbuild/connect-grpchealth-go"
 	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 	"github.com/xdorro/proto-base-project/proto-gen-go/auth/v1/authv1connect"
 	"github.com/xdorro/proto-base-project/proto-gen-go/permission/v1/permissionv1connect"
 	"github.com/xdorro/proto-base-project/proto-gen-go/role/v1/rolev1connect"
 	"github.com/xdorro/proto-base-project/proto-gen-go/user/v1/userv1connect"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/xdorro/golang-grpc-base-project/internal/interceptor"
 	authservice "github.com/xdorro/golang-grpc-base-project/internal/module/auth/service"
+	permissionmodel "github.com/xdorro/golang-grpc-base-project/internal/module/permission/model"
 	permissionservice "github.com/xdorro/golang-grpc-base-project/internal/module/permission/service"
 	roleservice "github.com/xdorro/golang-grpc-base-project/internal/module/role/service"
 	userservice "github.com/xdorro/golang-grpc-base-project/internal/module/user/service"
 	"github.com/xdorro/golang-grpc-base-project/pkg/redis"
 	"github.com/xdorro/golang-grpc-base-project/pkg/repo"
+	"github.com/xdorro/golang-grpc-base-project/pkg/utils/constants"
 )
 
 var _ IService = &Service{}
@@ -48,6 +54,8 @@ type Option struct {
 
 // Service struct.
 type Service struct {
+	seederService bool
+
 	// options
 	mux         *http.ServeMux
 	interceptor interceptor.IInterceptor
@@ -62,9 +70,10 @@ type Service struct {
 // NewService new service.
 func NewService(opt *Option) IService {
 	s := &Service{
-		mux:   opt.Mux,
-		repo:  opt.Repo,
-		redis: opt.Redis,
+		seederService: viper.GetBool("seeder.service"),
+		mux:           opt.Mux,
+		repo:          opt.Repo,
+		redis:         opt.Redis,
 	}
 
 	// Add connect options
@@ -96,6 +105,11 @@ func NewService(opt *Option) IService {
 
 	// Add service handlers
 	s.serviceHandler(connectOption)
+
+	// seeder Service
+	if s.seederService {
+		go s.seederServiceInfo()
+	}
 
 	return s
 }
@@ -158,4 +172,69 @@ func (s *Service) addServiceHandler(svcMethod any, fn func() (string, http.Handl
 	s.mux.Handle(str, handler)
 
 	logger.Msgf("Added service handler for %s", svcName)
+}
+
+// seederServiceInfo
+func (s *Service) seederServiceInfo() {
+	if len(s.services) == 0 {
+		return
+	}
+
+	permissionCollection := s.repo.CollectionModel(&permissionmodel.Permission{})
+
+	// find all permissions with filter
+	filter := bson.M{
+		"deleted_at": bson.M{
+			"$exists": false,
+		},
+		"slug": bson.M{
+			"$in": s.methods,
+		},
+	}
+
+	// find all permissions with filter and option
+	opt := options.
+		Find().
+		SetSort(bson.M{"created_at": -1})
+
+	bulk := make([]any, 0)
+	permissions, _ := repo.Find[permissionmodel.Permission](permissionCollection, filter, opt)
+
+	for _, slug := range s.methods {
+		if ok := s.hasSlugInPermissions(permissions, slug); !ok {
+			name := slug[strings.LastIndex(slug, "/")+1:]
+			per := &permissionmodel.Permission{
+				Name: name,
+				Slug: slug,
+			}
+			per.PreCreate()
+
+			bulk = append(bulk, per)
+		}
+	}
+
+	if len(bulk) > 0 {
+		_, err := repo.InsertMany(permissionCollection, bulk)
+		if err != nil {
+			log.Err(err).Msg("Error create permission")
+		}
+
+		_ = s.redis.Del(context.Background(), constants.ListAuthPermissionsKey)
+
+		log.Info().
+			Interface("data", bulk).
+			Msg("Insert permissions")
+	}
+
+}
+
+// hasSlugInPermissions
+func (s *Service) hasSlugInPermissions(permissions []*permissionmodel.Permission, slug string) bool {
+	for _, permission := range permissions {
+		if strings.EqualFold(slug, permission.Slug) {
+			return true
+		}
+	}
+
+	return false
 }
